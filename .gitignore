@@ -1,0 +1,4 @@
+/settings/settings
+/user-data/*
+
+!/user-data/readme.md
