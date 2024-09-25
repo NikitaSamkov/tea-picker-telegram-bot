@@ -1,7 +1,7 @@
 import json
 import os.path
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from configparser import ConfigParser
 import matplotlib.pyplot as plt
 import matplotlib.dates as matplotlib_dates
@@ -268,46 +268,78 @@ def calculate_tea_speed(cups_timestaps):
     return cups_time, cups_speed
 
 
-def set_today_speed_graph(stats, axis):
+def set_subplot_bg(axis, data_x, data_y):
+    def expand(value, multiplier):
+        if isinstance(value, float) or isinstance(value, int):
+            return value + (multiplier * 0.5)
+        if isinstance(value, datetime):
+            if value.year < 1970:
+                return value + timedelta(minutes=(multiplier * 15))
+            return value + timedelta(days=(multiplier * 1))
+        return value
+
+    res_dir = config.get('customization', 'RES_DIR', fallback=None)
+    bg = config.get('customization', 'SUBPLOT_BG', fallback=None)
+    if not bg or not res_dir:
+        return
+    image = plt.imread(os.path.join(res_dir, bg))
+    extent = [expand(min(data_x), -1), expand(max(data_x), 1), expand(min(data_y), -1), expand(max(data_y), 1)]
+    print(extent)
+    axis.imshow(image, extent=extent, aspect='auto', zorder=-1)
+    edge_color = config.get('customization', 'EDGE_COLOR', fallback=None)
+    if edge_color:
+        for spine in axis.spines.values():
+            spine.set_edgecolor(edge_color)
+
+
+def set_today_speed_graph(stats, axis, text_color, graph_line_color):
+    axis.set_title('Скорость питья чая за сегодня', color=text_color)
     cur_date = Constants.get_date()
     cups = stats.get(cur_date, [])
-    axis.set_title('Скорость питья чая за сегодня')
     if len(cups) < 2:
         return
     cups_time, cups_speed = calculate_tea_speed(cups)
-    axis.plot(cups_time, cups_speed, linewidth=3)
-    axis.set_xlabel('Время')
-    axis.set_ylabel('Скорость (кружек в час)')
+    set_subplot_bg(axis, cups_time, cups_speed)
+    axis.plot(cups_time, cups_speed, color=graph_line_color, linewidth=3)
+    axis.set_xlabel('Время', color=text_color)
+    axis.set_ylabel('Скорость (кружек в час)', color=text_color)
+    axis.tick_params(axis='x', colors=text_color)
+    axis.tick_params(axis='y', colors=text_color)
     axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%H:%M'))
 
 
-def set_today_count_graph(stats, axis):
+def set_today_count_graph(stats, axis, text_color, graph_line_color):
+    axis.set_title('Количество выпитого чая за сегодня', color=text_color)
     cur_date = Constants.get_date()
     cups = stats.get(cur_date, [])
-    axis.set_title('Количество выпитого чая за сегодня')
     cups_time = list(map(Constants.get_time_from_str, cups))
     cups_count = [i + 1 for i in range(len(cups))]
-    axis.plot(cups_time, cups_count, linewidth=3)
-    axis.set_xlabel('Время')
-    axis.set_ylabel('Количество кружек')
+    set_subplot_bg(axis, cups_time, cups_count)
+    axis.plot(cups_time, cups_count, color=graph_line_color, linewidth=3)
+    axis.set_xlabel('Время', color=text_color)
+    axis.set_ylabel('Количество кружек', color=text_color)
+    axis.tick_params(axis='x', colors=text_color)
+    axis.tick_params(axis='y', colors=text_color)
     axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%H:%M'))
 
 
-def set_daily_count_graph(stats, axis):
-    axis.set_title('Количество кружек чая по дням')
+def set_daily_count_graph(stats, axis, text_color, graph_line_color):
+    axis.set_title('Количество кружек чая по дням', color=text_color)
     if len(stats) < 2:
         return
     dates = [Constants.get_date_from_str(item) for item in list(stats.keys())[-Constants.GRAPH_MAX_DAYS:]]
     counts = [len(item) for item in list(stats.values())[-Constants.GRAPH_MAX_DAYS:]]
-    axis.plot(dates, counts, linewidth=3)
-    axis.set_xlabel('Дата')
-    axis.set_ylabel('Кружки')
-    axis.tick_params(axis='x', rotation=45)
+    set_subplot_bg(axis, dates, counts)
+    axis.plot(dates, counts, color=graph_line_color, linewidth=3)
+    axis.set_xlabel('Дата', color=text_color)
+    axis.set_ylabel('Кружки', color=text_color)
+    axis.tick_params(axis='x', colors=text_color, rotation=45)
+    axis.tick_params(axis='y', colors=text_color)
     axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%d-%m-%Y'))
 
 
-def set_daily_speed_graph(stats, axis):
-    axis.set_title('Средняя скорость питья чая по дням')
+def set_daily_speed_graph(stats, axis, text_color, graph_line_color):
+    axis.set_title('Средняя скорость питья чая по дням', color=text_color)
     if len(stats) < 2:
         return
     dates = []
@@ -320,25 +352,37 @@ def set_daily_speed_graph(stats, axis):
         else:
             _, cups_speed = calculate_tea_speed(timestamps)
             mid_speed.append(round(sum(cups_speed) / len(cups_speed), 2))
-    axis.plot(dates, mid_speed, linewidth=3)
-    axis.set_xlabel('Дата')
-    axis.set_ylabel('Средняя скорость (кружек в час)')
-    axis.tick_params(axis='x', rotation=45)
+    set_subplot_bg(axis, dates, mid_speed)
+    axis.plot(dates, mid_speed, color=graph_line_color, linewidth=3)
+    axis.set_xlabel('Дата', color=text_color)
+    axis.set_ylabel('Средняя скорость (кружек в час)', color=text_color)
+    axis.tick_params(axis='x', colors=text_color, rotation=45)
+    axis.tick_params(axis='y', colors=text_color)
     axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%d-%m-%Y'))
 
 
 @bot.message_handler(commands=['tea_graph'])
 def tea_graph(message):
-    plt.clf()
+    text_color = config.get('customization', 'TEXT_COLOR', fallback='black')
+    graph_line_color = config.get('customization', 'GRAPH_LINE_COLOR', fallback='blue')
+
     data = get_data(get_user_file(message))
     stats = data.get(Constants.STATS_KEY, {})
-    fig, axs = plt.subplots(2, 2, figsize=(10, 8))
-    plt.title('Статистика чая')
 
-    set_today_speed_graph(stats, axs[0, 0])
-    set_today_count_graph(stats, axs[0, 1])
-    set_daily_speed_graph(stats, axs[1, 0])
-    set_daily_count_graph(stats, axs[1, 1])
+    plt.clf()
+    plt.title('Статистика чая', color=text_color)
+    fig, axs = plt.subplots(2, 2, figsize=(10, 8))
+    bg = config.get('customization', 'PLOT_BG', fallback=None)
+    res_dir = config.get('customization', 'RES_DIR', fallback=None)
+    if bg and res_dir:
+        fig.figimage(plt.imread(os.path.join(res_dir, bg)), xo=0, yo=0, zorder=-1)
+
+    set_today_speed_graph(stats, axs[0, 0], text_color, graph_line_color)
+    set_today_count_graph(stats, axs[0, 1], text_color, graph_line_color)
+    set_daily_speed_graph(stats, axs[1, 0], text_color, graph_line_color)
+    set_daily_count_graph(stats, axs[1, 1], text_color, graph_line_color)
+
+    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
 
     plt.tight_layout()
     plt.savefig(os.path.join(Constants.USER_DIR, f'{message.from_user.id}.png'))

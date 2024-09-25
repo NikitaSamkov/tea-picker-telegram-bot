@@ -1,2 +1,10 @@
 [bot_settings]
 BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+
+[customization]
+RES_DIR=res
+PLOT_BG=plot-bg.PNG
+SUBPLOT_BG=subplot-bg.png
+GRAPH_LINE_COLOR=#ffffff
+TEXT_COLOR=#ffffff
+EDGE_COLOR=#ffffff
