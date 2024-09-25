@@ -1,4 +1,5 @@
 /settings/settings
 /user-data/*
+/.idea/
 
 !/user-data/readme.md

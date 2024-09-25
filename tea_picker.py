@@ -3,6 +3,8 @@ import os.path
 import random
 from datetime import datetime
 from configparser import ConfigParser
+import matplotlib.pyplot as plt
+import matplotlib.dates as matplotlib_dates
 
 import telebot
 
@@ -28,10 +30,23 @@ class Constants:
     }
     SETTINGS_DIR = 'settings'
     SETTINGS_FILE = 'settings'
+    GRAPH_MAX_DAYS = 30
 
     @staticmethod
     def get_date():
         return datetime.today().strftime('%d-%m-%Y')
+
+    @staticmethod
+    def get_date_from_str(str_date: str):
+        return datetime.strptime(str_date, '%d-%m-%Y')
+
+    @staticmethod
+    def get_time():
+        return datetime.now().strftime('%H:%M:%S')
+
+    @staticmethod
+    def get_time_from_str(str_time: str):
+        return datetime.strptime(str_time, '%H:%M:%S')
 
 
 def init_settings():
@@ -47,6 +62,7 @@ def init_settings():
     print('Токен сохранён!')
 
 
+plt.switch_backend('agg')
 settings_path = os.path.join(Constants.SETTINGS_DIR, Constants.SETTINGS_FILE)
 if not os.path.exists(settings_path):
     init_settings()
@@ -134,7 +150,10 @@ def plus_stat(path):
             data[Constants.STATS_KEY] = {}
             stats = data.get(Constants.STATS_KEY, {})
         cur_date = Constants.get_date()
-        stats[cur_date] = stats.get(cur_date, 0) + 1
+        cur_time = Constants.get_time()
+        time_list = stats.get(cur_date, [])
+        time_list.append(cur_time)
+        stats[cur_date] = time_list
         f.seek(0)
         f.write(json.dumps(data))
         f.truncate()
@@ -215,7 +234,7 @@ def get_stats(message):
     data = get_data(get_user_file(message))
     stats = data.get(Constants.STATS_KEY, {})
     cur_date = Constants.get_date()
-    cups = stats.get(cur_date, 0)
+    cups = len(stats.get(cur_date, []))
     reply = reply + '\n' + f'За сегодня ты выпил {cups} кружек чая.'
     ml = cups * Constants.CUP_ML
     reply = reply + '\n' + f'А это, на секунду, {ml}мл чая!'
@@ -235,6 +254,97 @@ def plus_cup(message):
     plus_stat(get_user_file(message))
     reply = 'Окей, завари еще раз. В статистике отметил еще одну кружечку чая.'
     bot.send_message(message.from_user.id, reply)
+
+
+def calculate_tea_speed(cups_timestaps):
+    cups_time = []
+    cups_speed = []
+    for i in range(len(cups_timestaps) - 1):
+        cur_time = Constants.get_time_from_str(cups_timestaps[i])
+        cups_time.append(cur_time)
+        time_diff = Constants.get_time_from_str(cups_timestaps[i + 1]) - cur_time
+        hours = time_diff.total_seconds() / 60 / 24
+        cups_speed.append(round(1 / hours, 2))
+    return cups_time, cups_speed
+
+
+def set_today_speed_graph(stats, axis):
+    cur_date = Constants.get_date()
+    cups = stats.get(cur_date, [])
+    axis.set_title('Скорость питья чая за сегодня')
+    if len(cups) < 2:
+        return
+    cups_time, cups_speed = calculate_tea_speed(cups)
+    axis.plot(cups_time, cups_speed, linewidth=3)
+    axis.set_xlabel('Время')
+    axis.set_ylabel('Скорость (кружек в час)')
+    axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%H:%M'))
+
+
+def set_today_count_graph(stats, axis):
+    cur_date = Constants.get_date()
+    cups = stats.get(cur_date, [])
+    axis.set_title('Количество выпитого чая за сегодня')
+    cups_time = list(map(Constants.get_time_from_str, cups))
+    cups_count = [i + 1 for i in range(len(cups))]
+    axis.plot(cups_time, cups_count, linewidth=3)
+    axis.set_xlabel('Время')
+    axis.set_ylabel('Количество кружек')
+    axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%H:%M'))
+
+
+def set_daily_count_graph(stats, axis):
+    axis.set_title('Количество кружек чая по дням')
+    if len(stats) < 2:
+        return
+    dates = [Constants.get_date_from_str(item) for item in list(stats.keys())[-Constants.GRAPH_MAX_DAYS:]]
+    counts = [len(item) for item in list(stats.values())[-Constants.GRAPH_MAX_DAYS:]]
+    axis.plot(dates, counts, linewidth=3)
+    axis.set_xlabel('Дата')
+    axis.set_ylabel('Кружки')
+    axis.tick_params(axis='x', rotation=45)
+    axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%d-%m-%Y'))
+
+
+def set_daily_speed_graph(stats, axis):
+    axis.set_title('Средняя скорость питья чая по дням')
+    if len(stats) < 2:
+        return
+    dates = []
+    mid_speed = []
+    for date in list(stats.keys())[-Constants.GRAPH_MAX_DAYS:]:
+        dates.append(Constants.get_date_from_str(date))
+        timestamps = stats.get(date, [])
+        if len(timestamps) < 2:
+            mid_speed.append(0)
+        else:
+            _, cups_speed = calculate_tea_speed(timestamps)
+            mid_speed.append(round(sum(cups_speed) / len(cups_speed), 2))
+    axis.plot(dates, mid_speed, linewidth=3)
+    axis.set_xlabel('Дата')
+    axis.set_ylabel('Средняя скорость (кружек в час)')
+    axis.tick_params(axis='x', rotation=45)
+    axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%d-%m-%Y'))
+
+
+@bot.message_handler(commands=['tea_graph'])
+def tea_graph(message):
+    plt.clf()
+    data = get_data(get_user_file(message))
+    stats = data.get(Constants.STATS_KEY, {})
+    fig, axs = plt.subplots(2, 2, figsize=(10, 8))
+    plt.title('Статистика чая')
+
+    set_today_speed_graph(stats, axs[0, 0])
+    set_today_count_graph(stats, axs[0, 1])
+    set_daily_speed_graph(stats, axs[1, 0])
+    set_daily_count_graph(stats, axs[1, 1])
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(Constants.USER_DIR, f'{message.from_user.id}.png'))
+
+    with open(os.path.join(Constants.USER_DIR, f'{message.from_user.id}.png'), 'rb') as photo:
+        bot.send_photo(message.from_user.id, photo)
 
 
 bot.polling(none_stop=True, interval=0)
