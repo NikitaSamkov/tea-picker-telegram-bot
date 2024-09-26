@@ -284,7 +284,6 @@ def set_subplot_bg(axis, data_x, data_y):
         return
     image = plt.imread(os.path.join(res_dir, bg))
     extent = [expand(min(data_x), -1), expand(max(data_x), 1), expand(min(data_y), -1), expand(max(data_y), 1)]
-    print(extent)
     axis.imshow(image, extent=extent, aspect='auto', zorder=-1)
     edge_color = config.get('customization', 'EDGE_COLOR', fallback=None)
     if edge_color:
@@ -292,9 +291,8 @@ def set_subplot_bg(axis, data_x, data_y):
             spine.set_edgecolor(edge_color)
 
 
-def set_today_speed_graph(stats, axis, text_color, graph_line_color):
+def set_today_speed_graph(stats, axis, text_color, graph_line_color, cur_date):
     axis.set_title('Скорость питья чая за сегодня', color=text_color)
-    cur_date = Constants.get_date()
     cups = stats.get(cur_date, [])
     if len(cups) < 2:
         return
@@ -308,10 +306,11 @@ def set_today_speed_graph(stats, axis, text_color, graph_line_color):
     axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%H:%M'))
 
 
-def set_today_count_graph(stats, axis, text_color, graph_line_color):
+def set_today_count_graph(stats, axis, text_color, graph_line_color, cur_date):
     axis.set_title('Количество выпитого чая за сегодня', color=text_color)
-    cur_date = Constants.get_date()
     cups = stats.get(cur_date, [])
+    if len(cups) < 2:
+        return
     cups_time = list(map(Constants.get_time_from_str, cups))
     cups_count = [i + 1 for i in range(len(cups))]
     set_subplot_bg(axis, cups_time, cups_count)
@@ -363,6 +362,12 @@ def set_daily_speed_graph(stats, axis, text_color, graph_line_color):
 
 @bot.message_handler(commands=['tea_graph'])
 def tea_graph(message):
+    args = ' '.join(message.text.split(' ')[1:])
+    try:
+        date = datetime.strptime(args, '%d.%m.%Y').strftime('%d-%m-%Y') if args else Constants.get_date()
+    except:
+        date = Constants.get_date()
+
     text_color = config.get('customization', 'TEXT_COLOR', fallback='black')
     graph_line_color = config.get('customization', 'GRAPH_LINE_COLOR', fallback='blue')
 
@@ -377,8 +382,8 @@ def tea_graph(message):
     if bg and res_dir:
         fig.figimage(plt.imread(os.path.join(res_dir, bg)), xo=0, yo=0, zorder=-1)
 
-    set_today_speed_graph(stats, axs[0, 0], text_color, graph_line_color)
-    set_today_count_graph(stats, axs[0, 1], text_color, graph_line_color)
+    set_today_speed_graph(stats, axs[0, 0], text_color, graph_line_color, date)
+    set_today_count_graph(stats, axs[0, 1], text_color, graph_line_color, date)
     set_daily_speed_graph(stats, axs[1, 0], text_color, graph_line_color)
     set_daily_count_graph(stats, axs[1, 1], text_color, graph_line_color)
 
