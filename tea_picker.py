@@ -269,21 +269,22 @@ def calculate_tea_speed(cups_timestaps):
 
 
 def set_subplot_bg(axis, data_x, data_y):
-    def expand(value, multiplier):
-        if isinstance(value, float) or isinstance(value, int):
-            return value + (multiplier * 0.5)
-        if isinstance(value, datetime):
-            if value.year < 1970:
-                return value + timedelta(minutes=(multiplier * 15))
-            return value + timedelta(days=(multiplier * 1))
-        return value
+    def get_margin(values):
+        multiplier = 0.1
+        line = max(values) - min(values)
+        if isinstance(line, timedelta):
+            return timedelta(seconds=line.total_seconds() * multiplier)
+        return line * multiplier
 
     res_dir = config.get('customization', 'RES_DIR', fallback=None)
     bg = config.get('customization', 'SUBPLOT_BG', fallback=None)
     if not bg or not res_dir:
         return
     image = plt.imread(os.path.join(res_dir, bg))
-    extent = [expand(min(data_x), -1), expand(max(data_x), 1), expand(min(data_y), -1), expand(max(data_y), 1)]
+    margin_x = get_margin(data_x)
+    margin_y = get_margin(data_y)
+
+    extent = [min(data_x) - margin_x, max(data_x) + margin_x, min(data_y) - margin_y, max(data_y) + margin_y]
     axis.imshow(image, extent=extent, aspect='auto', zorder=-1)
     edge_color = config.get('customization', 'EDGE_COLOR', fallback=None)
     if edge_color:
