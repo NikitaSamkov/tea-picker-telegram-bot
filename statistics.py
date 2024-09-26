@@ -37,7 +37,7 @@ def calculate_tea_speed(cups_timestaps):
         cur_time = Constants.get_time_from_str(cups_timestaps[i])
         cups_time.append(cur_time)
         time_diff = Constants.get_time_from_str(cups_timestaps[i + 1]) - cur_time
-        hours = time_diff.total_seconds() / 60 / 24
+        hours = time_diff.total_seconds() / 3600
         cups_speed.append(round(1 / hours, 2))
     return cups_time, cups_speed
 
