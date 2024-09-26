@@ -79,4 +79,4 @@ def tea_graph(message):
         bot.send_photo(message.from_user.id, photo)
 
 
-bot.polling(none_stop=True, interval=0)
+bot.polling(none_stop=True, interval=0, timeout=0)

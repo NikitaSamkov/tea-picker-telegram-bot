@@ -47,7 +47,11 @@ def set_subplot_bg(axis, data_x, data_y, config):
         multiplier = 0.1
         line = max(values) - min(values)
         if isinstance(line, timedelta):
+            if line.total_seconds() == 0:
+                return timedelta(minutes=15)
             return timedelta(seconds=line.total_seconds() * multiplier)
+        if line == 0:
+            return max(values) * multiplier
         return line * multiplier
 
     res_dir = config.get('customization', 'RES_DIR', fallback=None)
