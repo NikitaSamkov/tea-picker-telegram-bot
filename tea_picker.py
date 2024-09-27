@@ -37,7 +37,7 @@ def add_tea(message):
 
 
 @bot.message_handler(commands=['delete'])
-def delete_tea(message):
+def remove_tea(message):
     reply = delete_tea(message)
     bot.send_message(message.from_user.id, reply)
 
@@ -79,4 +79,4 @@ def tea_graph(message):
         bot.send_photo(message.from_user.id, photo)
 
 
-bot.polling(none_stop=True, interval=0, timeout=0)
+bot.polling(none_stop=True, interval=0, timeout=10, long_polling_timeout = 5)

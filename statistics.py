@@ -11,16 +11,19 @@ plt.switch_backend('agg')
 
 
 def get_statistics(message):
-    reply = '========================\nСТАТИСТИКА\n========================'
+    reply = '========================\nСТАТИСТИКА\n========================\n\n'
     data = get_data(get_user_file(message))
     stats = data.get(Constants.STATS_KEY, {})
     cur_date = Constants.get_date()
     cups = len(stats.get(cur_date, []))
-    reply = reply + '\n' + f'За сегодня ты выпил {cups} кружек чая.'
-    ml = cups * Constants.CUP_ML
-    reply = reply + '\n' + f'А это, на секунду, {ml}мл чая!'
-    percent = (ml * 100) // Constants.NEEDED_ML
-    reply = reply + '\n' + f'Кроме того, это {percent}% от суточной нормы воды!'
+    stat_parts = [
+        f'За сегодня ты выпил {cups} кружек чая.',
+        f'А это, на секунду, {cups * Constants.CUP_ML}мл чая!',
+        f'Кроме того, это {(cups * Constants.CUP_ML * 100) // Constants.NEEDED_ML}% от суточной нормы воды!',
+        f'Если вы продолжите в том же духе, то чая вам хватит максимум на '
+        f'{max((len(data.get(Constants.TEA_KEY, [])) * Constants.TEABAGS_COUNT) // cups - 1, 0)} дней!',
+    ]
+    reply = reply + '\n'.join(stat_parts)
     prev_reaction = ''
     for needed_cups, reaction in Constants.STATS_REACTIONS.items():
         if needed_cups > cups:

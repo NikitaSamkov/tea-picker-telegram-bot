@@ -23,6 +23,7 @@ class Constants:
     SETTINGS_DIR = 'settings'
     SETTINGS_FILE = 'settings'
     GRAPH_MAX_DAYS = 30
+    TEABAGS_COUNT = 25
 
     @staticmethod
     def get_date():
