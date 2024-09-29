@@ -1,11 +1,15 @@
+import datetime
 import os.path
-from configparser import ConfigParser
 import telebot
+from telebot import types
+from configparser import ConfigParser
 
 from constants import Constants
-from crud import create_tea, delete_tea, all_tea, random_tea, create_wisdom, add_cup
+from common import get_tea_by_message
+from crud import delete_tea, all_tea, random_tea, add_cup
 from statistics import get_statistics, generate_graph
 from settings import init_settings
+from separated_arguments import SAC
 
 settings_path = os.path.join(Constants.SETTINGS_DIR, Constants.SETTINGS_FILE)
 if not os.path.exists(settings_path):
@@ -32,14 +36,36 @@ def start(message):
 
 @bot.message_handler(commands=['add_tea'])
 def add_tea(message):
-    reply = create_tea(message)
+    reply = SAC.prepare('add_tea', message) or 'Напиши же мне название чая:'
     bot.send_message(message.from_user.id, reply)
 
 
 @bot.message_handler(commands=['delete'])
 def remove_tea(message):
-    reply = delete_tea(message)
-    bot.send_message(message.from_user.id, reply)
+    user_id = message.from_user.id
+    args = ' '.join(message.text.split(' ')[1:])
+    if args:
+        reply = delete_tea(user_id, args)
+        bot.send_message(message.from_user.id, reply)
+        return
+    tea = get_tea_by_message(message)
+    reply = 'Какой чай удалить из пула?\n' + '\n'.join(tea)
+    buttons = []
+    for tea_name in tea:
+        buttons.append([types.InlineKeyboardButton(tea_name, callback_data=f'delete;{user_id};{tea_name}')])
+    markup = types.InlineKeyboardMarkup(buttons)
+    bot.send_message(message.from_user.id, reply, reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.split(';')[0] == 'delete')
+def delete_tea_handler(call):
+    data_split = call.data.split(';')
+    if len(data_split) > 2:
+        message = call.message
+        user_id = data_split[1]
+        tea_name = data_split[2]
+        reply = delete_tea(user_id, tea_name)
+        bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply)
 
 
 @bot.message_handler(commands=['tea_list'])
@@ -56,7 +82,7 @@ def tea_pick(message):
 
 @bot.message_handler(commands=['add_wisdom'])
 def add_wisdom(message):
-    reply = create_wisdom(message)
+    reply = SAC.prepare('add_wisdom', message) or 'Напиши мудрость, чтобы я её запомнил:'
     bot.send_message(message.from_user.id, reply)
 
 
@@ -74,9 +100,45 @@ def plus_cup(message):
 
 @bot.message_handler(commands=['tea_graph'])
 def tea_graph(message):
-    generate_graph(message, config)
-    with open(os.path.join(Constants.USER_DIR, f'{message.from_user.id}.png'), 'rb') as photo:
-        bot.send_photo(message.from_user.id, photo)
+    user_id = message.from_user.id
+    args = ' '.join(message.text.split(' ')[1:])
+    if args:
+        generate_graph(user_id, args, config)
+        with open(os.path.join(Constants.USER_DIR, f'{message.from_user.id}.png'), 'rb') as photo:
+            bot.send_photo(message.from_user.id, photo)
+        return
+    cur_date = datetime.datetime.now()
+    buttons = [[], [], []]
+    for i in range(-5, 6, 1):
+        to_add = cur_date + datetime.timedelta(days=i)
+        str_date = to_add.strftime('%d.%m')
+        if i == 0:
+            str_date = '[СЕГОДНЯ] ' + str_date
+        buttons[0 if i < 0 else 1 if i == 0 else 2].append(
+            types.InlineKeyboardButton(str_date, callback_data=f"tea_graph;{user_id};{to_add.strftime('%d.%m.%Y')}"))
+    markup = types.InlineKeyboardMarkup(buttons)
+    bot.send_message(user_id, 'Выберите дату:', reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.split(';')[0] == 'tea_graph')
+def tea_graph_handler(call):
+    call_data = call.data.split(';')
+    if len(call_data) > 2:
+        message = call.message
+        bot.edit_message_text('Ваш график:', message.chat.id, message.message_id)
+        user_id = call_data[1]
+        date = call_data[2]
+        generate_graph(user_id, date, config)
+        with open(os.path.join(Constants.USER_DIR, f'{user_id}.png'), 'rb') as photo:
+            bot.send_photo(user_id, photo)
+
+
+@bot.message_handler(content_types=['text'])
+def handle_text(message):
+    reply = SAC.launch(message.from_user.id, message.text)
+    if reply:
+        markup = types.ReplyKeyboardMarkup()
+        bot.send_message(message.from_user.id, reply, reply_markup=markup)
 
 
 bot.polling(none_stop=True, interval=0, timeout=10, long_polling_timeout = 5)

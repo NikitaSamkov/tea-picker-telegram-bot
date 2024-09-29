@@ -1,7 +1,7 @@
 import json
 import random
 
-from common import get_user_file, get_data
+from common import get_user_file, get_data, get_file_by_id
 from constants import Constants
 
 
@@ -27,17 +27,15 @@ def add_to_list(path, key: str, elem: str):
     return data
 
 
-def create_tea(message):
-    tea_name = ' '.join(message.text.split()[1:])
+def create_tea(user_id, tea_name):
     if tea_name == '':
         return 'Че ты мне пустой чай отправляешь?'
-    data = add_to_list(get_user_file(message), Constants.TEA_KEY, tea_name)
+    data = add_to_list(get_file_by_id(user_id), Constants.TEA_KEY, tea_name)
     return 'Готово!\n' + print_tea_list(data)
 
 
-def delete_tea(message):
-    tea_name = ' '.join(message.text.split()[1:])
-    with open(get_user_file(message), 'r+') as f:
+def delete_tea(user_id, tea_name):
+    with open(get_file_by_id(user_id), 'r+') as f:
         data = f.read()
         if data:
             data = json.loads(data)
@@ -112,8 +110,7 @@ def random_tea(message):
     return reply
 
 
-def create_wisdom(message):
-    wisdom = ' '.join(message.text.split()[1:])
+def create_wisdom(user_id, wisdom):
     if wisdom == '':
         return
     data = add_to_list(Constants.WISDOM_FILE, Constants.WISDOM_KEY, wisdom)

@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 from matplotlib import pyplot as plt
 import matplotlib.dates as matplotlib_dates
 
-from common import get_data, get_user_file
+from common import get_data, get_user_file, get_file_by_id
 from constants import Constants
 
 
@@ -142,17 +142,16 @@ def set_daily_speed_graph(stats, axis, text_color, graph_line_color, config):
     axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%d-%m-%Y'))
 
 
-def generate_graph(message, config):
-    args = ' '.join(message.text.split(' ')[1:])
+def generate_graph(user_id, date, config):
     try:
-        date = datetime.strptime(args, '%d.%m.%Y').strftime('%d-%m-%Y') if args else Constants.get_date()
+        date = datetime.strptime(date, '%d.%m.%Y').strftime('%d-%m-%Y') if date else Constants.get_date()
     except:
         date = Constants.get_date()
 
     text_color = config.get('customization', 'TEXT_COLOR', fallback='black')
     graph_line_color = config.get('customization', 'GRAPH_LINE_COLOR', fallback='blue')
 
-    data = get_data(get_user_file(message))
+    data = get_data(get_file_by_id(user_id))
     stats = data.get(Constants.STATS_KEY, {})
 
     plt.clf()
@@ -171,4 +170,4 @@ def generate_graph(message, config):
     plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(Constants.USER_DIR, f'{message.from_user.id}.png'))
+    plt.savefig(os.path.join(Constants.USER_DIR, f'{user_id}.png'))

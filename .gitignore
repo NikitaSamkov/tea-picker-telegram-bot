@@ -1,5 +1,5 @@
 /settings/settings
 /user-data/*
-/.idea/
+__pycache__
 
 !/user-data/readme.md
