@@ -54,7 +54,7 @@ def set_subplot_bg(axis, data_x, data_y, config):
                 return timedelta(minutes=15)
             return timedelta(seconds=line.total_seconds() * multiplier)
         if line == 0:
-            return max(values) * multiplier
+            return max(values) * multiplier or 1
         return line * multiplier
 
     res_dir = config.get('customization', 'RES_DIR', fallback=None)
@@ -77,13 +77,15 @@ def set_today_speed_graph(stats, axis, text_color, graph_line_color, cur_date, c
     axis.set_title('Скорость питья чая за день', color=text_color)
     cups = stats.get(cur_date, [])
     if len(cups) < 2:
-        return
-    cups_time, cups_speed = calculate_tea_speed(cups)
+        times = ['09:00:00', '18:00:00']
+        cups_time, cups_speed = [Constants.get_time_from_str(item) for item in times], [0, 0]
+    else:
+        cups_time, cups_speed = calculate_tea_speed(cups)
     set_subplot_bg(axis, cups_time, cups_speed, config)
     axis.plot(cups_time, cups_speed, color=graph_line_color, linewidth=3)
     axis.set_xlabel('Время', color=text_color)
     axis.set_ylabel('Скорость (кружек в час)', color=text_color)
-    axis.tick_params(axis='x', colors=text_color)
+    axis.tick_params(axis='x', rotation=45, colors=text_color)
     axis.tick_params(axis='y', colors=text_color)
     axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%H:%M'))
 
@@ -92,14 +94,16 @@ def set_today_count_graph(stats, axis, text_color, graph_line_color, cur_date, c
     axis.set_title('Количество выпитого чая за день', color=text_color)
     cups = stats.get(cur_date, [])
     if len(cups) < 2:
-        return
-    cups_time = list(map(Constants.get_time_from_str, cups))
-    cups_count = [i + 1 for i in range(len(cups))]
+        times = ['09:00:00', '18:00:00']
+        cups_time, cups_count = [Constants.get_time_from_str(item) for item in times], [0, 0]
+    else:
+        cups_time = list(map(Constants.get_time_from_str, cups))
+        cups_count = [i + 1 for i in range(len(cups))]
     set_subplot_bg(axis, cups_time, cups_count, config)
     axis.plot(cups_time, cups_count, color=graph_line_color, linewidth=3)
     axis.set_xlabel('Время', color=text_color)
     axis.set_ylabel('Количество кружек', color=text_color)
-    axis.tick_params(axis='x', colors=text_color)
+    axis.tick_params(axis='x', rotation=45, colors=text_color)
     axis.tick_params(axis='y', colors=text_color)
     axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%H:%M'))
 
