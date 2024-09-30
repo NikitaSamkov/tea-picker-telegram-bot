@@ -22,16 +22,21 @@ class Constants:
     }
     SETTINGS_DIR = 'settings'
     SETTINGS_FILE = 'settings'
-    GRAPH_MAX_DAYS = 30
+    GRAPH_MAX_DAYS = 14
     TEABAGS_COUNT = 25
+    DATE_FORMAT = '%d-%m-%Y'
 
     @staticmethod
     def get_date():
-        return datetime.today().strftime('%d-%m-%Y')
+        return datetime.today().strftime(Constants.DATE_FORMAT)
+
+    @staticmethod
+    def str_date(date):
+        return date.strftime(Constants.DATE_FORMAT)
 
     @staticmethod
     def get_date_from_str(str_date: str):
-        return datetime.strptime(str_date, '%d-%m-%Y')
+        return datetime.strptime(str_date, Constants.DATE_FORMAT)
 
     @staticmethod
     def get_time():

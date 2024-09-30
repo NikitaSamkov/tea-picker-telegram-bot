@@ -109,12 +109,12 @@ def tea_graph(message):
         return
     cur_date = datetime.datetime.now()
     buttons = [[], [], []]
-    for i in range(-5, 6, 1):
+    for i in range(-10, 1, 1):
         to_add = cur_date + datetime.timedelta(days=i)
         str_date = to_add.strftime('%d.%m')
         if i == 0:
             str_date = '[СЕГОДНЯ] ' + str_date
-        buttons[0 if i < 0 else 1 if i == 0 else 2].append(
+        buttons[0 if i < -5 else 1 if i < 0 else 2].append(
             types.InlineKeyboardButton(str_date, callback_data=f"tea_graph;{user_id};{to_add.strftime('%d.%m.%Y')}"))
     markup = types.InlineKeyboardMarkup(buttons)
     bot.send_message(user_id, 'Выберите дату:', reply_markup=markup)
@@ -136,9 +136,10 @@ def tea_graph_handler(call):
 @bot.message_handler(content_types=['text'])
 def handle_text(message):
     reply = SAC.launch(message.from_user.id, message.text)
+
     if reply:
-        markup = types.ReplyKeyboardMarkup()
+        markup = types.ReplyKeyboardRemove()
         bot.send_message(message.from_user.id, reply, reply_markup=markup)
 
 
-bot.polling(none_stop=True, interval=0, timeout=10, long_polling_timeout = 5)
+bot.polling(none_stop=True, interval=0, timeout=10, long_polling_timeout=5)

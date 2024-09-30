@@ -74,7 +74,7 @@ def set_subplot_bg(axis, data_x, data_y, config):
 
 
 def set_today_speed_graph(stats, axis, text_color, graph_line_color, cur_date, config):
-    axis.set_title('Скорость питья чая за сегодня', color=text_color)
+    axis.set_title('Скорость питья чая за день', color=text_color)
     cups = stats.get(cur_date, [])
     if len(cups) < 2:
         return
@@ -89,7 +89,7 @@ def set_today_speed_graph(stats, axis, text_color, graph_line_color, cur_date, c
 
 
 def set_today_count_graph(stats, axis, text_color, graph_line_color, cur_date, config):
-    axis.set_title('Количество выпитого чая за сегодня', color=text_color)
+    axis.set_title('Количество выпитого чая за день', color=text_color)
     cups = stats.get(cur_date, [])
     if len(cups) < 2:
         return
@@ -104,14 +104,47 @@ def set_today_count_graph(stats, axis, text_color, graph_line_color, cur_date, c
     axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%H:%M'))
 
 
-def set_daily_count_graph(stats, axis, text_color, graph_line_color, config):
+def get_graph_period(start_date, stats):
+    past = []
+    now = Constants.get_date_from_str(start_date)
+    future = []
+    to_add_past = 0
+    to_add_future = 0
+    limit_past = Constants.get_date_from_str(min(stats.keys()))
+    limit_future = Constants.get_date_from_str(max(stats.keys()))
+
+    for i in range(Constants.GRAPH_MAX_DAYS):
+        td = timedelta(days=(i + 1))
+        if now - td >= limit_past:
+            past.append(now - td)
+        else:
+            to_add_future += 1
+        if now + td <= limit_future:
+            future.append(now + td)
+        else:
+            to_add_past += 1
+    for i in range(to_add_past):
+        td = timedelta(days=(Constants.GRAPH_MAX_DAYS + i + 1))
+        if now - td < limit_past:
+            break
+        past.append(now - td)
+    for i in range(to_add_future):
+        td = timedelta(days=(Constants.GRAPH_MAX_DAYS + i + 1))
+        if now + td > limit_future:
+            break
+        past.append(now + td)
+    past.reverse()
+    return past + [now] + future
+
+
+def set_daily_count_graph(stats, axis, text_color, graph_line_color, cur_date, config):
     axis.set_title('Количество кружек чая по дням', color=text_color)
     if len(stats) < 2:
         return
-    dates = [Constants.get_date_from_str(item) for item in list(stats.keys())[-Constants.GRAPH_MAX_DAYS:]]
-    counts = [len(item) for item in list(stats.values())[-Constants.GRAPH_MAX_DAYS:]]
-    set_subplot_bg(axis, dates, counts, config)
-    axis.plot(dates, counts, color=graph_line_color, linewidth=3)
+    period = get_graph_period(cur_date, stats)
+    counts = [len(stats.get(Constants.str_date(item), [])) for item in period]
+    set_subplot_bg(axis, period, counts, config)
+    axis.plot(period, counts, color=graph_line_color, linewidth=3)
     axis.set_xlabel('Дата', color=text_color)
     axis.set_ylabel('Кружки', color=text_color)
     axis.tick_params(axis='x', colors=text_color, rotation=45)
@@ -119,15 +152,16 @@ def set_daily_count_graph(stats, axis, text_color, graph_line_color, config):
     axis.xaxis.set_major_formatter(matplotlib_dates.DateFormatter('%d-%m-%Y'))
 
 
-def set_daily_speed_graph(stats, axis, text_color, graph_line_color, config):
+def set_daily_speed_graph(stats, axis, text_color, graph_line_color, cur_date, config):
     axis.set_title('Средняя скорость питья чая по дням', color=text_color)
     if len(stats) < 2:
         return
+    period = get_graph_period(cur_date, stats)
     dates = []
     mid_speed = []
-    for date in list(stats.keys())[-Constants.GRAPH_MAX_DAYS:]:
-        dates.append(Constants.get_date_from_str(date))
-        timestamps = stats.get(date, [])
+    for date in period:
+        dates.append(date)
+        timestamps = stats.get(Constants.str_date(date), [])
         if len(timestamps) < 2:
             mid_speed.append(0)
         else:
@@ -164,8 +198,8 @@ def generate_graph(user_id, date, config):
 
     set_today_speed_graph(stats, axs[0, 0], text_color, graph_line_color, date, config)
     set_today_count_graph(stats, axs[0, 1], text_color, graph_line_color, date, config)
-    set_daily_speed_graph(stats, axs[1, 0], text_color, graph_line_color, config)
-    set_daily_count_graph(stats, axs[1, 1], text_color, graph_line_color, config)
+    set_daily_speed_graph(stats, axs[1, 0], text_color, graph_line_color, date, config)
+    set_daily_count_graph(stats, axs[1, 1], text_color, graph_line_color, date, config)
 
     plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
 
