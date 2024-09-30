@@ -2,11 +2,14 @@ import os
 from datetime import timedelta, datetime
 from matplotlib import pyplot as plt
 import matplotlib.dates as matplotlib_dates
+import locale
+import calendar
 
 from common import get_data, get_user_file, get_file_by_id
 from constants import Constants
 
 
+locale.setlocale(locale.LC_ALL, 'ru_RU')
 plt.switch_backend('agg')
 
 
@@ -20,7 +23,7 @@ def get_statistics(message):
         f'За сегодня ты выпил {cups} кружек чая.',
         f'А это, на секунду, {cups * Constants.CUP_ML}мл чая!',
         f'Кроме того, это {(cups * Constants.CUP_ML * 100) // Constants.NEEDED_ML}% от суточной нормы воды!',
-        f'Если вы продолжите в том же духе, то чая вам хватит максимум на '
+        f'Если ты продолжишь в том же духе, то чая тебе хватит максимум на '
         f'{max((len(data.get(Constants.TEA_KEY, [])) * Constants.TEABAGS_COUNT) // cups - 1, 0)} дней!',
     ]
     reply = reply + '\n'.join(stat_parts)
@@ -34,6 +37,8 @@ def get_statistics(message):
 
 
 def calculate_tea_speed(cups_timestaps):
+    if len(cups_timestaps) == 0:
+        return []
     cups_time = []
     cups_speed = []
     for i in range(len(cups_timestaps) - 1):
@@ -114,8 +119,9 @@ def get_graph_period(start_date, stats):
     future = []
     to_add_past = 0
     to_add_future = 0
-    limit_past = Constants.get_date_from_str(min(stats.keys()))
-    limit_future = Constants.get_date_from_str(max(stats.keys()))
+    keys = list(map(Constants.get_date_from_str, stats.keys()))
+    limit_past = min(keys)
+    limit_future = max(keys)
 
     for i in range(Constants.GRAPH_MAX_DAYS):
         td = timedelta(days=(i + 1))
@@ -136,7 +142,7 @@ def get_graph_period(start_date, stats):
         td = timedelta(days=(Constants.GRAPH_MAX_DAYS + i + 1))
         if now + td > limit_future:
             break
-        past.append(now + td)
+        future.append(now + td)
     past.reverse()
     return past + [now] + future
 
@@ -209,3 +215,39 @@ def generate_graph(user_id, date, config):
 
     plt.tight_layout()
     plt.savefig(os.path.join(Constants.USER_DIR, f'{user_id}.png'))
+
+
+def get_week_stats(message):
+    reply = '========================\nСТАТИСТИКА НЕДЕЛИ\n========================\n\n'
+    data = get_data(get_user_file(message))
+    stats = data.get(Constants.STATS_KEY, {})
+    day_names = list(map(lambda item: item.upper(), calendar.day_name))
+    today = datetime.today()
+    cur_day_of_week = today.isoweekday()
+    week = [Constants.str_date(today + timedelta(days=i)) for i in range(1 - cur_day_of_week, 7 - cur_day_of_week + 1)]
+
+    stat_parts = []
+    total_cups = 0
+    best_mid_speed = (0, 0)
+    best_cups = (0, 0)
+
+    for i, date in enumerate(week):
+        timestamps = stats.get(date, [])
+        total_cups += len(timestamps)
+        if len(timestamps) > 0:
+            _, speed = calculate_tea_speed(timestamps)
+            mid_speed = round(sum(speed) / len(speed), 3)
+            if mid_speed > best_mid_speed[0]:
+                best_mid_speed = (mid_speed, i)
+        if len(timestamps) > best_cups[0]:
+            best_cups = (len(timestamps), i)
+
+    stat_parts.append(f'За эту неделю было выпито {(total_cups * Constants.CUP_ML) / 1000} литров чая.')
+    stat_parts.append(f'Если считать, что налить чай ты ходишь 5 минут, '
+                      f'то ты потратил на этой неделе ~{round(total_cups * 5 / 60, 1)} часов на это.')
+    stat_parts.append(f'Самый скоростной день недели - {day_names[best_mid_speed[1]]}. '
+                      f'Скорость была {best_mid_speed[0]} кружек в час.')
+    stat_parts.append(f'Чайный день - {day_names[best_cups[1]]}. Было выпито {best_cups[0]} кружек чая!')
+
+    reply = reply + '\n\n'.join(stat_parts)
+    return reply

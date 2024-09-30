@@ -7,7 +7,7 @@ from configparser import ConfigParser
 from constants import Constants
 from common import get_tea_by_message
 from crud import delete_tea, all_tea, random_tea, add_cup
-from statistics import get_statistics, generate_graph
+from statistics import get_statistics, generate_graph, get_week_stats
 from settings import init_settings
 from separated_arguments import SAC
 
@@ -132,6 +132,12 @@ def tea_graph_handler(call):
         generate_graph(user_id, date, config)
         with open(os.path.join(Constants.USER_DIR, f'{user_id}.png'), 'rb') as photo:
             bot.send_photo(user_id, photo)
+
+
+@bot.message_handler(commands=['week_stats'])
+def week_stats(message):
+    reply = get_week_stats(message)
+    bot.send_message(message.from_user.id, reply)
 
 
 @bot.message_handler(content_types=['text'])
