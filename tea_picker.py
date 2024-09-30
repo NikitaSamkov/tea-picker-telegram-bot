@@ -24,13 +24,14 @@ bot = telebot.TeleBot(config.get('bot_settings', 'BOT_TOKEN'))
 def start(message):
     reply = 'Привет!' \
             '\nЯ - твой помощник в выборе чая (☕☕☕) в эти тяжёлые времена!' \
-            '\nАвтор: Самков Н. А. (https://online.sbis.ru/person/d4ea3ef3-98f2-4057-9c88-eee341795833)' \
+            '\nАвтор: Самков Н. А. (https://vk.com/nikitasamkov)' \
             '\nКоманды:' \
             '\n/add_tea - Добавить чай в пул' \
             '\n/delete - Удалить чай из пула (кончился)' \
             '\n/tea_list - Список чая' \
             '\n/pick - Выбрать чай из пула' \
-            '\n/statistics - Получить статистику по выпитому чаю за сегодня'
+            '\n/statistics - Получить статистику по выпитому чаю за сегодня' \
+            '\n/tea_graph - Получить статистику в графиках'
     bot.send_message(message.from_user.id, reply)
 
 
