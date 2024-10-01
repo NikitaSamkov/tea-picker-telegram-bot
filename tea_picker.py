@@ -149,4 +149,4 @@ def handle_text(message):
         bot.send_message(message.from_user.id, reply, reply_markup=markup)
 
 
-bot.polling(none_stop=True, interval=0, timeout=10, long_polling_timeout=5)
+bot.infinity_polling(timeout=10, long_polling_timeout=5)

@@ -86,8 +86,9 @@ def set_today_speed_graph(stats, axis, text_color, graph_line_color, cur_date, c
         cups_time, cups_speed = [Constants.get_time_from_str(item) for item in times], [0, 0]
     else:
         cups_time, cups_speed = calculate_tea_speed(cups)
+    marker = 'o' if len(cups_speed) == 1 else None
     set_subplot_bg(axis, cups_time, cups_speed, config)
-    axis.plot(cups_time, cups_speed, color=graph_line_color, linewidth=3)
+    axis.plot(cups_time, cups_speed, color=graph_line_color, linewidth=3, marker=marker)
     axis.set_xlabel('Время', color=text_color)
     axis.set_ylabel('Скорость (кружек в час)', color=text_color)
     axis.tick_params(axis='x', rotation=45, colors=text_color)
@@ -234,7 +235,7 @@ def get_week_stats(message):
     for i, date in enumerate(week):
         timestamps = stats.get(date, [])
         total_cups += len(timestamps)
-        if len(timestamps) > 0:
+        if len(timestamps) > 1:
             _, speed = calculate_tea_speed(timestamps)
             mid_speed = round(sum(speed) / len(speed), 3)
             if mid_speed > best_mid_speed[0]:
