@@ -26,6 +26,8 @@ class Constants:
     TEABAGS_COUNT = 25
     DATE_FORMAT = '%d-%m-%Y'
     METADATA_FILE = 'available_metadata.json'
+    MARK_SYMBOL = '✅'
+    CROSS_SYMBOL = '❌'
 
     @staticmethod
     def get_date():

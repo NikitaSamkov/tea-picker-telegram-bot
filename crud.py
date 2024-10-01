@@ -1,26 +1,13 @@
 import json
 import random
 
-from common import get_user_file, get_data, get_file_by_id, save_data
+from common import get_user_file, get_data, get_file_by_id, save_data, get_tea_list
 from constants import Constants
-from tea_metadata import convert_data
 
 
 def print_tea_list(data):
     tea = data.get(Constants.TEA_KEY, {})
     return '\nТекущий список чая:\n   ' + '\n   '.join(tea)
-
-
-def convert_if_need(data):
-    if Constants.TEA_KEY not in data:
-        data[Constants.TEA_KEY] = {}
-    if not isinstance(data.get(Constants.TEA_KEY, {}), dict):
-        data[Constants.TEA_KEY] = convert_data(data[Constants.TEA_KEY])
-
-
-def get_tea_list(data):
-    convert_if_need(data)
-    return data[Constants.TEA_KEY]
 
 
 def create_tea(user_id, tea_name):
@@ -31,6 +18,8 @@ def create_tea(user_id, tea_name):
     tea_list = get_tea_list(data)
     if tea_name in tea_list:
         return 'Такой чай уже есть!'
+    if ';' in tea_name:
+        return 'Название чая не должно содержать символа ";"!\nУвы =('
     tea_list[tea_name] = {}
     save_data(user_file, data)
     return 'Готово!\n' + print_tea_list(data)

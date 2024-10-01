@@ -35,6 +35,22 @@ def save_data(path, data):
     return data
 
 
-def get_tea_by_message(message):
-    data = get_data(get_user_file(message))
-    return data.get(Constants.TEA_KEY)
+def convert_data(data):
+    new_data = {key: {} for key in data}
+    return new_data
+
+
+def convert_if_need(data):
+    if Constants.TEA_KEY not in data:
+        data[Constants.TEA_KEY] = {}
+    if not isinstance(data.get(Constants.TEA_KEY, {}), dict):
+        data[Constants.TEA_KEY] = convert_data(data[Constants.TEA_KEY])
+
+
+def get_tea_list(data):
+    convert_if_need(data)
+    return data[Constants.TEA_KEY]
+
+
+def get_tea_names(message):
+    return list(get_tea_list(get_data(get_user_file(message))).keys())

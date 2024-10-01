@@ -5,12 +5,12 @@ from telebot import types
 from configparser import ConfigParser
 
 from constants import Constants
-from common import get_tea_by_message
+from common import get_tea_names, get_tea_list, get_data, get_file_by_id
 from crud import delete_tea, all_tea, random_tea, add_cup
 from statistics import get_statistics, generate_graph, get_week_stats
 from settings import init_settings
 from separated_arguments import SAC
-from tea_metadata import get_metadata
+from tea_metadata import get_metadata, get_tea_info, get_tea_meta, edit_tea_info
 
 settings_path = os.path.join(Constants.SETTINGS_DIR, Constants.SETTINGS_FILE)
 if not os.path.exists(settings_path):
@@ -50,7 +50,10 @@ def remove_tea(message):
         reply = delete_tea(user_id, args)
         bot.send_message(message.from_user.id, reply)
         return
-    tea = get_tea_by_message(message)
+    tea = get_tea_names(message)
+    if len(tea) == 0:
+        bot.send_message(message.from_user.id, 'Ваша коллекция чая пуста!')
+        return
     reply = 'Какой чай удалить из пула?\n' + '\n'.join(tea)
     buttons = []
     for tea_name in tea:
@@ -155,6 +158,117 @@ def all_metadata(message):
         messages.append(to_add)
     reply += '\n\n'.join(messages)
     bot.send_message(message.from_user.id, reply)
+
+
+@bot.message_handler(commands=['tea_info'])
+def tea_info(message):
+    user_id = message.from_user.id
+    args = ' '.join(message.text.split(' ')[1:])
+    if args:
+        reply = get_tea_info(user_id, args)
+        bot.send_message(message.from_user.id, reply)
+        return
+    tea = get_tea_names(message)
+    if len(tea) == 0:
+        bot.send_message(message.from_user.id, 'Ваша коллекция чая пуста!')
+        return
+    reply = 'Выберите чай:\n' + '\n'.join(tea)
+    buttons = []
+    for tea_name in tea:
+        buttons.append([types.InlineKeyboardButton(tea_name, callback_data=f'info;{user_id};{tea_name}')])
+    markup = types.InlineKeyboardMarkup(buttons)
+    bot.send_message(message.from_user.id, reply, reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.split(';')[0] == 'info')
+def tea_info_handler(call):
+    data_split = call.data.split(';')
+    if len(data_split) > 2:
+        message = call.message
+        user_id = data_split[1]
+        tea_name = data_split[2]
+        reply = get_tea_info(user_id, tea_name)
+        bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply)
+
+
+@bot.message_handler(commands=['edit_tea'])
+def edit_tea(message):
+    user_id = message.from_user.id
+    args = ' '.join(message.text.split(' ')[1:])
+    if args:
+        reply = get_tea_info(user_id, args)
+        bot.send_message(message.from_user.id, reply)
+        return
+    tea = get_tea_names(message)
+    if len(tea) == 0:
+        bot.send_message(message.from_user.id, 'Ваша коллекция чая пуста!')
+        return
+    reply = 'Выберите чай:\n' + '\n'.join(tea)
+    buttons = []
+    for tea_name in tea:
+        buttons.append([types.InlineKeyboardButton(tea_name, callback_data=f'edit;{user_id};{tea_name}')])
+    markup = types.InlineKeyboardMarkup(buttons)
+    bot.send_message(message.from_user.id, reply, reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.split(';')[0] == 'edit')
+def edit_tea_handler(call):
+    data_split = call.data.split(';')
+    if len(data_split) > 2:
+        message = call.message
+        user_id = data_split[1]
+        tea_name = data_split[2]
+
+        tea_meta = get_tea_meta(get_tea_list(get_data(get_file_by_id(user_id))).get(tea_name))
+        reply = f'[{tea_name}]\n\n' + \
+                '\n'.join([(Constants.MARK_SYMBOL if item.get('value') is not None else Constants.CROSS_SYMBOL) +
+                           ' ' + item.get('name') +
+                           ((' - ' + item.get('value')) if item.get('value') is not None else '') for item in tea_meta])
+
+        buttons = []
+        for meta_id, meta_info in get_metadata().items():
+            buttons.append([types.InlineKeyboardButton(meta_info.get('name'),
+                                                       callback_data=f'edit_{meta_id};{user_id};{tea_name}')])
+
+        markup = types.InlineKeyboardMarkup(buttons)
+        bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply, reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.split(';')[0].startswith('edit_'))
+def edit_meta_handler(call):
+    data_split = call.data.split(';')
+    if len(data_split) > 2:
+        message = call.message
+        user_id = int(data_split[1])
+        tea_name = data_split[2]
+        meta_id = '_'.join(data_split[0].split('_')[1:])
+
+        if len(data_split) == 4:
+            value = data_split[3]
+            reply = edit_tea_info(user_id, value, tea_name, meta_id)
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply)
+            return
+
+        metadata = get_metadata().get(meta_id, None)
+        if metadata is None:
+            print(f'Метадата с ид {meta_id} не найдена!')
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id,
+                                  text='Сожалею, данный аттрибут пока изменять нельзя.')
+            return
+
+        values = metadata.get('values', None)
+        if values:
+            markup = types.InlineKeyboardMarkup([
+                [types.InlineKeyboardButton(item, callback_data=f'edit_{meta_id};{user_id};{tea_name};{item}')]
+                for item in values])
+            reply = f'[{tea_name}]\n\n{metadata.get("name")}:'
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply,
+                                  reply_markup=markup)
+            return
+
+        SAC.prepare('edit_tea_info', user_id=user_id, extra_args={'tea_name': tea_name, 'meta_id': meta_id})
+        reply = f'Напишите значение для аттрибута "{metadata.get("name")}":'
+        bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply)
 
 
 @bot.message_handler(content_types=['text'])
