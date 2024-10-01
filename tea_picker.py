@@ -5,7 +5,7 @@ from telebot import types
 from configparser import ConfigParser
 
 from constants import Constants
-from common import get_tea_names, get_tea_list, get_data, get_file_by_id
+from common import get_tea_names, get_tea_list, get_data, get_file_by_id, get_user_file
 from crud import delete_tea, all_tea, random_tea, add_cup
 from statistics import get_statistics, generate_graph, get_week_stats
 from settings import init_settings
@@ -82,6 +82,15 @@ def tea_list(message):
 @bot.message_handler(commands=['pick'])
 def tea_pick(message):
     reply = random_tea(message)
+    if reply is None:
+        bot.send_message(message.from_user.id, 'Милорд! Ваша коллекция чая пуста!')
+        return 
+    tea_name = reply.split('\n\n')[1]
+    tea_meta = [f'{item.get("name")}: {item.get("value")}'
+                for item in get_tea_meta(get_tea_list(get_data(get_user_file(message))).get(tea_name, {}))
+                if item.get('value', None) is not None]
+    if len(tea_meta) > 0:
+        reply += '\n\n' + '\n\n'.join(tea_meta)
     bot.send_message(message.from_user.id, reply)
 
 

@@ -52,37 +52,40 @@ def get_wisdom():
     return random.choice(data)
 
 
-def plus_stat(path):
-    with open(path, 'r+') as f:
-        data = f.read()
-        if data:
-            data = json.loads(data)
-        else:
-            data = {}
-        stats = data.get(Constants.STATS_KEY, None)
-        if not stats:
-            data[Constants.STATS_KEY] = {}
-            stats = data.get(Constants.STATS_KEY, {})
-        cur_date = Constants.get_date()
-        cur_time = Constants.get_time()
-        time_list = stats.get(cur_date, [])
-        time_list.append(cur_time)
-        stats[cur_date] = time_list
-        f.seek(0)
-        f.write(json.dumps(data))
-        f.truncate()
+def plus_stat(path, tea_name=None):
+    data = get_data(path)
+
+    stats = data.get(Constants.STATS_KEY, None)
+    if not stats:
+        data[Constants.STATS_KEY] = {}
+        stats = data.get(Constants.STATS_KEY, {})
+    cur_date = Constants.get_date()
+    cur_time = Constants.get_time()
+    time_list = stats.get(cur_date, [])
+    time_list.append(cur_time)
+
+    if tea_name:
+        tea_list = get_tea_list(data)
+        teabags = tea_list.get(tea_name, {}).get('teabags', None)
+        if teabags:
+            teabags = int(teabags) - 1
+            if teabags < 0:
+                teabags = 0
+            tea_list[tea_name]['teabags'] = str(teabags)
+
+    save_data(path, data)
 
 
 def random_tea(message):
     data = get_data(get_user_file(message))
     tea_list = get_tea_list(data)
     if len(tea_list) == 0:
-        reply = 'Милорд! Ваша коллекция чая пуста!'
+        reply = None
     else:
         tea = random.choice(list(tea_list.keys()))
         wisdom = get_wisdom()
         reply = wisdom + '\n\n' + tea
-        plus_stat(get_user_file(message))
+        plus_stat(get_user_file(message), tea_name=tea)
     return reply
 
 
