@@ -25,6 +25,7 @@ class Constants:
     GRAPH_MAX_DAYS = 14
     TEABAGS_COUNT = 25
     DATE_FORMAT = '%d-%m-%Y'
+    METADATA_FILE = 'available_metadata.json'
 
     @staticmethod
     def get_date():

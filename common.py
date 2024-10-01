@@ -18,12 +18,20 @@ def get_file_by_id(user_id):
 
 
 def get_data(path):
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding='utf-8') as f:
         data = f.read()
         if data:
             data = json.loads(data)
         else:
             data = {}
+    return data
+
+
+def save_data(path, data):
+    with open(path, 'r+') as f:
+        f.seek(0)
+        f.write(json.dumps(data, indent=2))
+        f.truncate()
     return data
 
 

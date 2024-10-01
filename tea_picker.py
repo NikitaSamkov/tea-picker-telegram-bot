@@ -10,6 +10,7 @@ from crud import delete_tea, all_tea, random_tea, add_cup
 from statistics import get_statistics, generate_graph, get_week_stats
 from settings import init_settings
 from separated_arguments import SAC
+from tea_metadata import get_metadata
 
 settings_path = os.path.join(Constants.SETTINGS_DIR, Constants.SETTINGS_FILE)
 if not os.path.exists(settings_path):
@@ -137,6 +138,22 @@ def tea_graph_handler(call):
 @bot.message_handler(commands=['week_stats'])
 def week_stats(message):
     reply = get_week_stats(message)
+    bot.send_message(message.from_user.id, reply)
+
+
+@bot.message_handler(commands=['metadata'])
+def all_metadata(message):
+    reply = 'Текущие доступные метаданные:\n'
+    metadata = get_metadata()
+    messages = []
+    for meta_id, meta_value in metadata.items():
+        name = meta_value.get('name', 'UNKNOWN')
+        values = meta_value.get('values', [])
+        to_add = f'{name}\n   id: {meta_id}'
+        if values:
+            to_add += '\n   Доступные значения: ' + ', '.join(map(lambda item: f'"{item}"', values))
+        messages.append(to_add)
+    reply += '\n\n'.join(messages)
     bot.send_message(message.from_user.id, reply)
 
 
