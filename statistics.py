@@ -19,12 +19,16 @@ def get_statistics(message):
     stats = data.get(Constants.STATS_KEY, {})
     cur_date = Constants.get_date()
     cups = len(stats.get(cur_date, []))
+    all_teabags = sum([int(item.get('teabags', Constants.TEABAGS_COUNT))
+                       for item in data.get(Constants.TEA_KEY, {}).values()])
     stat_parts = [
         f'За сегодня ты выпил {cups} кружек чая.',
         f'А это, на секунду, {cups * Constants.CUP_ML}мл чая!',
         f'Кроме того, это {(cups * Constants.CUP_ML * 100) // Constants.NEEDED_ML}% от суточной нормы воды!',
         f'Если ты продолжишь в том же духе, то чая тебе хватит максимум на '
-        f'{max((len(data.get(Constants.TEA_KEY, [])) * Constants.TEABAGS_COUNT) // (cups or 1) - 1, 0)} дней!',
+        f'{max(all_teabags // (cups or 1) - 1, 0)} дней!',
+        f'А если каждый пакетик заваривать дважды, то максимум на '
+        f'{max(all_teabags // ((cups or 1) // 2 or 1) - 1, 0)} дней!'
     ]
     reply = reply + '\n'.join(stat_parts)
     prev_reaction = ''
@@ -232,17 +236,28 @@ def get_week_stats(message):
     total_cups = 0
     best_mid_speed = (0, 0)
     best_cups = (0, 0)
+    hot_time = None
 
     for i, date in enumerate(week):
         timestamps = stats.get(date, [])
         total_cups += len(timestamps)
         if len(timestamps) > 1:
             _, speed = calculate_tea_speed(timestamps)
+            cups_time = list(map(Constants.get_time_from_str, timestamps))
             mid_speed = round(sum(speed) / len(speed), 3)
             if mid_speed > best_mid_speed[0]:
                 best_mid_speed = (mid_speed, i)
+            hot_idx = speed.index(max(speed))
+            hot_period = (cups_time[hot_idx], cups_time[hot_idx + 1])
+            if hot_time is None:
+                hot_time = hot_period
+            elif (hot_time[0] <= hot_period[0] < hot_time[1]) or (hot_time[0] < hot_period[1] <= hot_time[1]):
+                hot_time = (max(hot_time[0], hot_period[0]), min(hot_time[1], hot_period[1]))
+            else:
+                hot_time = (min(hot_time[0], hot_period[0]), max(hot_time[1], hot_period[1]))
         if len(timestamps) > best_cups[0]:
             best_cups = (len(timestamps), i)
+
 
     stat_parts.append(f'За эту неделю было выпито {(total_cups * Constants.CUP_ML) / 1000} литров чая.')
     stat_parts.append(f'Если считать, что налить чай ты ходишь 5 минут, '
@@ -250,6 +265,10 @@ def get_week_stats(message):
     stat_parts.append(f'Самый скоростной день недели - {day_names[best_mid_speed[1]]}. '
                       f'Скорость была {best_mid_speed[0]} кружек в час.')
     stat_parts.append(f'Чайный день - {day_names[best_cups[1]]}. Было выпито {best_cups[0]} кружек чая!')
+    if hot_time is not None:
+        stat_parts.append(f'Самые горячие часы за неделю: '
+                          f'{hot_time[0].strftime("%H:%M")}-{hot_time[1].strftime("%H:%M")}'
+                          f'\nВ этот период скорость была на высочайшем уровне!')
 
     reply = reply + '\n\n'.join(stat_parts)
     return reply
