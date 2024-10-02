@@ -87,12 +87,16 @@ def tea_pick(message):
         bot.send_message(message.from_user.id, 'Милорд! Ваша коллекция чая пуста!')
         return 
     tea_name = reply.split('\n\n')[1]
-    tea_meta = [f'{item.get("name")}: {item.get("value")}'
-                for item in get_tea_meta(get_tea_list(get_data(get_user_file(message))).get(tea_name, {}))
+    tea_data = get_tea_list(get_data(get_user_file(message))).get(tea_name, {})
+    tea_meta = [f'{item.get("name")}: {item.get("value")}' for item in get_tea_meta(tea_data)
                 if item.get('value', None) is not None]
     if len(tea_meta) > 0:
         reply += '\n\n' + '\n'.join(tea_meta)
     bot.send_message(message.from_user.id, reply)
+    if tea_data.get('teabags', None) and int(tea_data.get('teabags')) == 0:
+        reply = f'У вас кончился чай {tea_name}!' \
+                f'\nПожалуйста, удалите его из списка или обновите данные о количестве пакетиков (/edit_tea)'
+        bot.send_message(message.from_user.id, reply)
 
 
 @bot.message_handler(commands=['add_wisdom'])

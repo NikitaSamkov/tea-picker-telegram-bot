@@ -45,7 +45,7 @@ def calculate_tea_speed(cups_timestaps):
         cur_time = Constants.get_time_from_str(cups_timestaps[i])
         cups_time.append(cur_time)
         time_diff = Constants.get_time_from_str(cups_timestaps[i + 1]) - cur_time
-        hours = time_diff.total_seconds() / 3600
+        hours = (time_diff.total_seconds() or 1) / 3600
         cups_speed.append(round(1 / hours, 2))
     return cups_time, cups_speed
 
@@ -99,14 +99,15 @@ def set_today_speed_graph(stats, axis, text_color, graph_line_color, cur_date, c
 def set_today_count_graph(stats, axis, text_color, graph_line_color, cur_date, config):
     axis.set_title('Количество выпитого чая за день', color=text_color)
     cups = stats.get(cur_date, [])
-    if len(cups) < 2:
+    if len(cups) < 1:
         times = ['09:00:00', '18:00:00']
         cups_time, cups_count = [Constants.get_time_from_str(item) for item in times], [0, 0]
     else:
         cups_time = list(map(Constants.get_time_from_str, cups))
         cups_count = [i + 1 for i in range(len(cups))]
+    marker = 'o' if len(cups_count) == 1 else None
     set_subplot_bg(axis, cups_time, cups_count, config)
-    axis.plot(cups_time, cups_count, color=graph_line_color, linewidth=3)
+    axis.plot(cups_time, cups_count, color=graph_line_color, linewidth=3, marker=marker)
     axis.set_xlabel('Время', color=text_color)
     axis.set_ylabel('Количество кружек', color=text_color)
     axis.tick_params(axis='x', rotation=45, colors=text_color)
