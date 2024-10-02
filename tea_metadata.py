@@ -26,7 +26,7 @@ def get_tea_info(user_id, tea_name):
     reply = f'[{tea_name}]\n\n'
     if len(tea_meta) == 0:
         return reply + 'Это чай.'
-    return reply + '\n\n'.join(tea_meta)
+    return reply + '\n'.join(tea_meta)
 
 
 def edit_tea_info(user_id, value, tea_name, meta_id):

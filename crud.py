@@ -63,6 +63,7 @@ def plus_stat(path, tea_name=None):
     cur_time = Constants.get_time()
     time_list = stats.get(cur_date, [])
     time_list.append(cur_time)
+    stats[cur_date] = time_list
 
     if tea_name:
         tea_list = get_tea_list(data)

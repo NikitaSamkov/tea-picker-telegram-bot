@@ -1,4 +1,5 @@
 import datetime
+import json
 import os.path
 import telebot
 from telebot import types
@@ -90,7 +91,7 @@ def tea_pick(message):
                 for item in get_tea_meta(get_tea_list(get_data(get_user_file(message))).get(tea_name, {}))
                 if item.get('value', None) is not None]
     if len(tea_meta) > 0:
-        reply += '\n\n' + '\n\n'.join(tea_meta)
+        reply += '\n\n' + '\n'.join(tea_meta)
     bot.send_message(message.from_user.id, reply)
 
 
@@ -235,9 +236,12 @@ def edit_tea_handler(call):
                            ((' - ' + item.get('value')) if item.get('value') is not None else '') for item in tea_meta])
 
         buttons = []
-        for meta_id, meta_info in get_metadata().items():
-            buttons.append([types.InlineKeyboardButton(meta_info.get('name'),
-                                                       callback_data=f'edit_{meta_id};{user_id};{tea_name}')])
+        for i, (meta_id, meta_info) in enumerate(get_metadata().items()):
+            button_row = i // 2
+            if len(buttons) <= button_row:
+                buttons.append([])
+            callback = f'edit_{meta_id};{user_id};{tea_name}'
+            buttons[button_row].append(types.InlineKeyboardButton(meta_info.get('name'), callback_data=callback))
 
         markup = types.InlineKeyboardMarkup(buttons)
         bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply, reply_markup=markup)
@@ -252,12 +256,6 @@ def edit_meta_handler(call):
         tea_name = data_split[2]
         meta_id = '_'.join(data_split[0].split('_')[1:])
 
-        if len(data_split) == 4:
-            value = data_split[3]
-            reply = edit_tea_info(user_id, value, tea_name, meta_id)
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply)
-            return
-
         metadata = get_metadata().get(meta_id, None)
         if metadata is None:
             print(f'Метадата с ид {meta_id} не найдена!')
@@ -265,11 +263,25 @@ def edit_meta_handler(call):
                                   text='Сожалею, данный аттрибут пока изменять нельзя.')
             return
 
+        if len(data_split) == 4:
+            value_idx = data_split[3]
+            values = metadata.get('values', None)
+            value = value_idx if not values or not value_idx.isnumeric() or len(values) <= int(value_idx) \
+                else values[int(value_idx)]
+            reply = edit_tea_info(user_id, value, tea_name, meta_id)
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply)
+            return
+
         values = metadata.get('values', None)
         if values:
-            markup = types.InlineKeyboardMarkup([
-                [types.InlineKeyboardButton(item, callback_data=f'edit_{meta_id};{user_id};{tea_name};{item}')]
-                for item in values])
+            buttons = []
+            for i, item in enumerate(values):
+                callback = f'edit_{meta_id};{user_id};{tea_name};{i}'
+                if len(callback.encode('utf-8')) > 64:
+                    bot.send_message(user_id, 'К сожалению, этот аттрибут пока менять нельзя')
+                    return
+                buttons.append([types.InlineKeyboardButton(item, callback_data=callback)])
+            markup = types.InlineKeyboardMarkup(buttons)
             reply = f'[{tea_name}]\n\n{metadata.get("name")}:'
             bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply,
                                   reply_markup=markup)

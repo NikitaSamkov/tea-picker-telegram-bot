@@ -24,7 +24,7 @@ def get_statistics(message):
         f'А это, на секунду, {cups * Constants.CUP_ML}мл чая!',
         f'Кроме того, это {(cups * Constants.CUP_ML * 100) // Constants.NEEDED_ML}% от суточной нормы воды!',
         f'Если ты продолжишь в том же духе, то чая тебе хватит максимум на '
-        f'{max((len(data.get(Constants.TEA_KEY, [])) * Constants.TEABAGS_COUNT) // cups - 1, 0)} дней!',
+        f'{max((len(data.get(Constants.TEA_KEY, [])) * Constants.TEABAGS_COUNT) // (cups or 1) - 1, 0)} дней!',
     ]
     reply = reply + '\n'.join(stat_parts)
     prev_reaction = ''
