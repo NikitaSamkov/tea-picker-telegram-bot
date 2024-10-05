@@ -227,11 +227,13 @@ def edit_tea_handler(call):
         reply = f'[{tea_name}]\n\n' + \
                 '\n'.join([(Constants.MARK_SYMBOL if item.get('value') is not None else Constants.CROSS_SYMBOL) +
                            ' ' + item.get('name') +
-                           ((' - ' + str(item.get('value'))) if item.get('value') is not None else '')
+                           ((': ' + str(item.get('value'))) if item.get('value') is not None else '')
                            for item in tea_meta])
 
         buttons = []
         for i, (meta_id, meta_info) in enumerate(get_metadata().items()):
+            if meta_info.get('hidden', None) is True:
+                continue
             button_row = i // 2
             if len(buttons) <= button_row:
                 buttons.append([])
