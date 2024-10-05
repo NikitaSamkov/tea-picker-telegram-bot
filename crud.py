@@ -2,6 +2,7 @@ import json
 import random
 
 from common import get_user_file, get_data, get_file_by_id, save_data, get_tea_list
+from tea_metadata import get_tea_meta
 from constants import Constants
 
 
@@ -73,6 +74,7 @@ def plus_stat(path, tea_name=None):
             if teabags < 0:
                 teabags = 0
             tea_list[tea_name]['teabags'] = str(teabags)
+        tea_list[tea_name]['picked'] = tea_list.get(tea_name, {}).get('picked', 0) + 1
 
     save_data(path, data)
 
@@ -81,12 +83,27 @@ def random_tea(message):
     data = get_data(get_user_file(message))
     tea_list = get_tea_list(data)
     if len(tea_list) == 0:
-        reply = None
-    else:
-        tea = random.choice(list(tea_list.keys()))
-        wisdom = get_wisdom()
-        reply = wisdom + '\n\n' + tea
-        plus_stat(get_user_file(message), tea_name=tea)
+        return None
+    tea = random.choice(list(tea_list.keys()))
+    wisdom = get_wisdom()
+    reply = wisdom + '\n\n' + tea
+    plus_stat(get_user_file(message), tea_name=tea)
+
+    tea_meta = get_tea_meta(tea_list.get(tea))
+    tea_info = []
+    warning = ''
+    if len(tea_meta) > 0:
+        for item in tea_meta:
+            if item.get('value', None) is None:
+                continue
+            tea_info.append(f'{item.get("name")}: {item.get("value")}')
+            if item.get('id') == 'teabags' and item.get('value') == 0:
+                warning = f'\n\nУ вас кончился чай {tea}!' \
+                          f'\nПожалуйста, удалите его из списка или обновите данные о количестве пакетиков (/edit_tea)'
+
+    if len(tea_info) > 0 or warning:
+        reply += '\n\n' + '\n'.join(tea_info) + warning
+
     return reply
 
 

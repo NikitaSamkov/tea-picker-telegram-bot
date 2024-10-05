@@ -2,18 +2,29 @@ from common import get_data, save_data, get_tea_list, get_file_by_id
 from constants import Constants
 
 
+TYPE_TO_FUNC = {
+    'int': int
+}
+
+
 def get_metadata():
     return get_data(Constants.METADATA_FILE)
 
 
-def get_tea_meta(tea_data):
+def get_tea_meta(tea_data, with_hidden=False):
     metadata = get_metadata()
     tea_meta = []
     for meta_id, meta_info in metadata.items():
-        meta_name = metadata.get(meta_id, {}).get('name', None)
+        meta_name = meta_info.get('name', None)
         if not meta_name:
             continue
-        tea_meta.append({'id': meta_id, 'name': meta_name, 'value': tea_data.get(meta_id, None)})
+        if meta_info.get('hidden', False) and not with_hidden:
+            continue
+        value = tea_data.get(meta_id, None)
+        meta_type = meta_info.get('type', None)
+        if meta_type and meta_type in TYPE_TO_FUNC and value:
+            value = TYPE_TO_FUNC.get(meta_type)(value)
+        tea_meta.append({'id': meta_id, 'name': meta_name, 'value': value})
     return tea_meta
 
 

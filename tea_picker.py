@@ -85,18 +85,8 @@ def tea_pick(message):
     reply = random_tea(message)
     if reply is None:
         bot.send_message(message.from_user.id, 'Милорд! Ваша коллекция чая пуста!')
-        return 
-    tea_name = reply.split('\n\n')[1]
-    tea_data = get_tea_list(get_data(get_user_file(message))).get(tea_name, {})
-    tea_meta = [f'{item.get("name")}: {item.get("value")}' for item in get_tea_meta(tea_data)
-                if item.get('value', None) is not None]
-    if len(tea_meta) > 0:
-        reply += '\n\n' + '\n'.join(tea_meta)
+        return
     bot.send_message(message.from_user.id, reply)
-    if tea_data.get('teabags', None) and int(tea_data.get('teabags')) == 0:
-        reply = f'У вас кончился чай {tea_name}!' \
-                f'\nПожалуйста, удалите его из списка или обновите данные о количестве пакетиков (/edit_tea)'
-        bot.send_message(message.from_user.id, reply)
 
 
 @bot.message_handler(commands=['add_wisdom'])
@@ -237,7 +227,8 @@ def edit_tea_handler(call):
         reply = f'[{tea_name}]\n\n' + \
                 '\n'.join([(Constants.MARK_SYMBOL if item.get('value') is not None else Constants.CROSS_SYMBOL) +
                            ' ' + item.get('name') +
-                           ((' - ' + item.get('value')) if item.get('value') is not None else '') for item in tea_meta])
+                           ((' - ' + str(item.get('value'))) if item.get('value') is not None else '')
+                           for item in tea_meta])
 
         buttons = []
         for i, (meta_id, meta_info) in enumerate(get_metadata().items()):

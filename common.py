@@ -28,7 +28,7 @@ def get_data(path):
 
 
 def save_data(path, data):
-    with open(path, 'r+') as f:
+    with open(path, 'r+', encoding='utf-8') as f:
         f.seek(0)
         f.write(json.dumps(data, indent=2))
         f.truncate()
