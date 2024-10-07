@@ -28,6 +28,7 @@ class Constants:
     METADATA_FILE = 'available_metadata.json'
     MARK_SYMBOL = '✅'
     CROSS_SYMBOL = '❌'
+    DEMO_DIR = 'demo'
 
     @staticmethod
     def get_date():
