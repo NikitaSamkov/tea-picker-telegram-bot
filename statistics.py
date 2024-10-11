@@ -21,6 +21,8 @@ def get_statistics(message):
     cups = len(stats.get(cur_date, []))
     all_teabags = sum([int(item.get('teabags', Constants.TEABAGS_COUNT))
                        for item in data.get(Constants.TEA_KEY, {}).values()])
+    picked_tea = [(key, value.get('picked', None)) for key, value in data.get(Constants.TEA_KEY, {}).items()
+                  if value.get('picked', None) is not None]
     stat_parts = [
         f'За сегодня ты выпил {cups} кружек чая.',
         f'А это, на секунду, {cups * Constants.CUP_ML}мл чая!',
@@ -30,6 +32,9 @@ def get_statistics(message):
         f'А если каждый пакетик заваривать дважды, то максимум на '
         f'{max(all_teabags // ((cups or 1) // 2 or 1) - 1, 0)} дней!'
     ]
+    if len(picked_tea) > 0:
+        stat_parts.append(f'Кстати, мой любимый чай - это {max(picked_tea, key=lambda item: item[1])[0]}!')
+
     reply = reply + '\n'.join(stat_parts)
     prev_reaction = ''
     for needed_cups, reaction in Constants.STATS_REACTIONS.items():
