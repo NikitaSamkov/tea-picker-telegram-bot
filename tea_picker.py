@@ -3,6 +3,7 @@ import json
 import os.path
 import telebot
 from telebot import types
+from telebot.apihelper import ApiTelegramException
 from configparser import ConfigParser
 
 from constants import Constants
@@ -22,6 +23,14 @@ config.read(settings_path)
 bot = telebot.TeleBot(config.get('bot_settings', 'BOT_TOKEN'))
 
 
+def send_message(user_message, reply, markup=None):
+    try:
+        bot.send_message(user_message.from_user.id, reply, reply_markup=markup)
+    except ApiTelegramException as err:
+        user = user_message.from_user
+        print(f'Ошибка для пользователя {user.username} ({user.last_name} {user.first_name}) [{user.id}]: {err}')
+
+
 @bot.message_handler(commands=['start'])
 def start(message):
     reply = 'Привет!' \
@@ -34,13 +43,13 @@ def start(message):
             '\n/pick - Выбрать чай из пула' \
             '\n/statistics - Получить статистику по выпитому чаю за сегодня' \
             '\n/tea_graph - Получить статистику в графиках'
-    bot.send_message(message.from_user.id, reply)
+    send_message(message, reply)
 
 
 @bot.message_handler(commands=['add_tea'])
 def add_tea(message):
     reply = SAC.prepare('add_tea', message) or 'Напиши же мне название чая:'
-    bot.send_message(message.from_user.id, reply)
+    send_message(message, reply)
 
 
 @bot.message_handler(commands=['delete'])
@@ -60,7 +69,7 @@ def remove_tea(message):
     for tea_name in tea:
         buttons.append([types.InlineKeyboardButton(tea_name, callback_data=f'delete;{user_id};{tea_name}')])
     markup = types.InlineKeyboardMarkup(buttons)
-    bot.send_message(message.from_user.id, reply, reply_markup=markup)
+    send_message(message, reply, markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.split(';')[0] == 'delete')
@@ -77,7 +86,7 @@ def delete_tea_handler(call):
 @bot.message_handler(commands=['tea_list'])
 def tea_list(message):
     reply = all_tea(message)
-    bot.send_message(message.from_user.id, reply)
+    send_message(message, reply)
 
 
 @bot.message_handler(commands=['pick'])
@@ -86,25 +95,25 @@ def tea_pick(message):
     if reply is None:
         bot.send_message(message.from_user.id, 'Милорд! Ваша коллекция чая пуста!')
         return
-    bot.send_message(message.from_user.id, reply)
+    send_message(message, reply)
 
 
 @bot.message_handler(commands=['add_wisdom'])
 def add_wisdom(message):
     reply = SAC.prepare('add_wisdom', message) or 'Напиши мудрость, чтобы я её запомнил:'
-    bot.send_message(message.from_user.id, reply)
+    send_message(message, reply)
 
 
 @bot.message_handler(commands=['statistics'])
 def get_stats(message):
     reply = get_statistics(message)
-    bot.send_message(message.from_user.id, reply)
+    send_message(message, reply)
 
 
 @bot.message_handler(commands=['plus_cup'])
 def plus_cup(message):
     reply = add_cup(message)
-    bot.send_message(message.from_user.id, reply)
+    send_message(message, reply)
 
 
 @bot.message_handler(commands=['tea_graph'])
@@ -126,7 +135,7 @@ def tea_graph(message):
         buttons[0 if i < -5 else 1 if i < 0 else 2].append(
             types.InlineKeyboardButton(str_date, callback_data=f"tea_graph;{user_id};{to_add.strftime('%d.%m.%Y')}"))
     markup = types.InlineKeyboardMarkup(buttons)
-    bot.send_message(user_id, 'Выберите дату:', reply_markup=markup)
+    send_message(message, 'Выберите дату:', markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.split(';')[0] == 'tea_graph')
@@ -145,7 +154,7 @@ def tea_graph_handler(call):
 @bot.message_handler(commands=['week_stats'])
 def week_stats(message):
     reply = get_week_stats(message)
-    bot.send_message(message.from_user.id, reply)
+    send_message(message, reply)
 
 
 @bot.message_handler(commands=['metadata'])
@@ -161,7 +170,7 @@ def all_metadata(message):
             to_add += '\n   Доступные значения: ' + ', '.join(map(lambda item: f'"{item}"', values))
         messages.append(to_add)
     reply += '\n\n'.join(messages)
-    bot.send_message(message.from_user.id, reply)
+    send_message(message, reply)
 
 
 @bot.message_handler(commands=['tea_info'])
@@ -181,7 +190,7 @@ def tea_info(message):
     for tea_name in tea:
         buttons.append([types.InlineKeyboardButton(tea_name, callback_data=f'info;{user_id};{tea_name}')])
     markup = types.InlineKeyboardMarkup(buttons)
-    bot.send_message(message.from_user.id, reply, reply_markup=markup)
+    send_message(message, reply, markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.split(';')[0] == 'info')
@@ -212,7 +221,7 @@ def edit_tea(message):
     for tea_name in tea:
         buttons.append([types.InlineKeyboardButton(tea_name, callback_data=f'edit;{user_id};{tea_name}')])
     markup = types.InlineKeyboardMarkup(buttons)
-    bot.send_message(message.from_user.id, reply, reply_markup=markup)
+    send_message(message, reply, markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.split(';')[0] == 'edit')
@@ -295,7 +304,7 @@ def handle_text(message):
 
     if reply:
         markup = types.ReplyKeyboardRemove()
-        bot.send_message(message.from_user.id, reply, reply_markup=markup)
+        send_message(message, reply, markup)
 
 
 bot.infinity_polling(timeout=10, long_polling_timeout=5)
