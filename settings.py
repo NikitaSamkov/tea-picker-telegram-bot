@@ -1,5 +1,6 @@
 import os
 from configparser import ConfigParser
+from datetime import datetime
 
 from constants import Constants
 
@@ -20,9 +21,10 @@ def init_settings():
 def log(message):
     if not os.path.exists(Constants.LOG_DIR):
         os.makedirs(Constants.LOG_DIR)
-    log_file = f'{Constants.get_date()}.log'
+    date = datetime.fromtimestamp(message.date)
+    log_file = f'{Constants.str_date(date)}.log'
     path = os.path.join(Constants.LOG_DIR, log_file)
 
     with open(path, 'a', encoding='utf-8') as f:
-        msg = f'[{Constants.get_time()}] @{message.from_user.username}({message.from_user.id}) - "{message.text}"\n'
+        msg = f'[{Constants.str_time(date)}] @{message.from_user.username}({message.from_user.id}) - "{message.text}"\n'
         f.write(msg)

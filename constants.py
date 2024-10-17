@@ -25,6 +25,7 @@ class Constants:
     GRAPH_MAX_DAYS = 14
     TEABAGS_COUNT = 25
     DATE_FORMAT = '%d-%m-%Y'
+    TIME_FORMAT = '%H:%M:%S'
     METADATA_FILE = 'available_metadata.json'
     MARK_SYMBOL = '✅'
     CROSS_SYMBOL = '❌'
@@ -46,8 +47,12 @@ class Constants:
 
     @staticmethod
     def get_time():
-        return datetime.now().strftime('%H:%M:%S')
+        return datetime.now().strftime(Constants.TIME_FORMAT)
+
+    @staticmethod
+    def str_time(time):
+        return time.strftime(Constants.TIME_FORMAT)
 
     @staticmethod
     def get_time_from_str(str_time: str):
-        return datetime.strptime(str_time, '%H:%M:%S')
+        return datetime.strptime(str_time, Constants.TIME_FORMAT)
