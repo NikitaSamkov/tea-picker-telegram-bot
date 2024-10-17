@@ -15,3 +15,14 @@ def init_settings():
     with open(os.path.join(Constants.SETTINGS_DIR, Constants.SETTINGS_FILE), 'w') as settings_f:
         config_tmpl.write(settings_f)
     print('Токен сохранён!')
+
+
+def log(message):
+    if not os.path.exists(Constants.LOG_DIR):
+        os.makedirs(Constants.LOG_DIR)
+    log_file = f'{Constants.get_date()}.log'
+    path = os.path.join(Constants.LOG_DIR, log_file)
+
+    with open(path, 'a', encoding='utf-8') as f:
+        msg = f'[{Constants.get_time()}] @{message.from_user.username}({message.from_user.id}) - "{message.text}"\n'
+        f.write(msg)

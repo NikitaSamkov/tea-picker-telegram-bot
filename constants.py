@@ -29,6 +29,8 @@ class Constants:
     MARK_SYMBOL = '✅'
     CROSS_SYMBOL = '❌'
     DEMO_DIR = 'demo'
+    INFO_KEY = 'info'
+    LOG_DIR = 'logs'
 
     @staticmethod
     def get_date():

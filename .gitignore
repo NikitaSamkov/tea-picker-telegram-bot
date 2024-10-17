@@ -1,5 +1,6 @@
 /settings/settings
 /user-data/*
+/logs/*
 __pycache__
 
 !/user-data/readme.md

@@ -54,3 +54,16 @@ def get_tea_list(data):
 
 def get_tea_names(message):
     return list(get_tea_list(get_data(get_user_file(message))).keys())
+
+
+def update_info(message):
+    path = get_user_file(message)
+    data = get_data(path)
+    user = message.from_user
+    data[Constants.INFO_KEY] = {
+        'id': user.id,
+        'username': user.username,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+    }
+    save_data(path, data)

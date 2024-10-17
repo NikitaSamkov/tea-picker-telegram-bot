@@ -7,10 +7,10 @@ from telebot.apihelper import ApiTelegramException
 from configparser import ConfigParser
 
 from constants import Constants
-from common import get_tea_names, get_tea_list, get_data, get_file_by_id, get_user_file
+from common import get_tea_names, get_tea_list, get_data, get_file_by_id, get_user_file, update_info
 from crud import delete_tea, all_tea, random_tea, add_cup
 from statistics import get_statistics, generate_graph, get_week_stats
-from settings import init_settings
+from settings import init_settings, log
 from separated_arguments import SAC
 from tea_metadata import get_metadata, get_tea_info, get_tea_meta, edit_tea_info
 
@@ -25,6 +25,8 @@ bot = telebot.TeleBot(config.get('bot_settings', 'BOT_TOKEN'))
 
 def send_message(user_message, reply, markup=None):
     try:
+        update_info(message=user_message)
+        log(user_message)
         bot.send_message(user_message.from_user.id, reply, reply_markup=markup)
     except ApiTelegramException as err:
         user = user_message.from_user
