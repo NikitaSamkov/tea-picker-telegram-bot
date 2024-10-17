@@ -58,11 +58,11 @@ def remove_tea(message):
     args = ' '.join(message.text.split(' ')[1:])
     if args:
         reply = delete_tea(user_id, args)
-        bot.send_message(message.from_user.id, reply)
+        send_message(message, reply)
         return
     tea = get_tea_names(message)
     if len(tea) == 0:
-        bot.send_message(message.from_user.id, 'Ваша коллекция чая пуста!')
+        send_message(message, 'Ваша коллекция чая пуста!')
         return
     reply = 'Какой чай удалить из пула?\n' + '\n'.join(tea)
     buttons = []
@@ -93,7 +93,7 @@ def tea_list(message):
 def tea_pick(message):
     reply = random_tea(message)
     if reply is None:
-        bot.send_message(message.from_user.id, 'Милорд! Ваша коллекция чая пуста!')
+        send_message(message, 'Милорд! Ваша коллекция чая пуста!')
         return
     send_message(message, reply)
 
@@ -179,11 +179,11 @@ def tea_info(message):
     args = ' '.join(message.text.split(' ')[1:])
     if args:
         reply = get_tea_info(user_id, args)
-        bot.send_message(message.from_user.id, reply)
+        send_message(message, reply)
         return
     tea = get_tea_names(message)
     if len(tea) == 0:
-        bot.send_message(message.from_user.id, 'Ваша коллекция чая пуста!')
+        send_message(message, 'Ваша коллекция чая пуста!')
         return
     reply = 'Выберите чай:\n' + '\n'.join(tea)
     buttons = []
@@ -210,11 +210,11 @@ def edit_tea(message):
     args = ' '.join(message.text.split(' ')[1:])
     if args:
         reply = get_tea_info(user_id, args)
-        bot.send_message(message.from_user.id, reply)
+        send_message(message, reply)
         return
     tea = get_tea_names(message)
     if len(tea) == 0:
-        bot.send_message(message.from_user.id, 'Ваша коллекция чая пуста!')
+        send_message(message, 'Ваша коллекция чая пуста!')
         return
     reply = 'Выберите чай:\n' + '\n'.join(tea)
     buttons = []
@@ -284,7 +284,7 @@ def edit_meta_handler(call):
             for i, item in enumerate(values):
                 callback = f'edit_{meta_id};{user_id};{tea_name};{i}'
                 if len(callback.encode('utf-8')) > 64:
-                    bot.send_message(user_id, 'К сожалению, этот аттрибут пока менять нельзя')
+                    send_message(message, 'К сожалению, этот аттрибут пока менять нельзя')
                     return
                 buttons.append([types.InlineKeyboardButton(item, callback_data=callback)])
             markup = types.InlineKeyboardMarkup(buttons)
