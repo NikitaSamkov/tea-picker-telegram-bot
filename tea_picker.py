@@ -27,7 +27,7 @@ def send_message(user_message, reply, markup=None):
     try:
         update_info(message=user_message)
         log(user_message)
-        bot.send_message(user_message.from_user.id, reply, reply_markup=markup)
+        bot.send_message(user_message.chat.id, reply, reply_markup=markup)
     except ApiTelegramException as err:
         user = user_message.from_user
         print(f'Ошибка для пользователя {user.username} ({user.last_name} {user.first_name}) [{user.id}]: {err}')
@@ -150,7 +150,7 @@ def tea_graph_handler(call):
         date = call_data[2]
         generate_graph(user_id, date, config)
         with open(os.path.join(Constants.USER_DIR, f'{user_id}.png'), 'rb') as photo:
-            bot.send_photo(user_id, photo)
+            bot.send_photo(call.message.chat.id, photo)
 
 
 @bot.message_handler(commands=['week_stats'])
