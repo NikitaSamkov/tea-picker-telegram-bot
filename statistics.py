@@ -228,6 +228,24 @@ def generate_graph(user_id, date, config):
     plt.savefig(os.path.join(Constants.USER_DIR, f'{user_id}.png'))
 
 
+def get_cup_time(cups_timestamps: list):
+    result = []
+    timestamps = list(map(Constants.get_time_from_str, cups_timestamps))
+    for i in range(len(timestamps) - 1):
+        result.append(timestamps[i + 1] - timestamps[i])
+    return result
+
+
+def get_work_time(cups_timestamps: list):
+    if len(cups_timestamps) == 0:
+        return timedelta()
+    if len(cups_timestamps) == 1:
+        return Constants.AVERAGE_TEA_TIME
+    cup_times = get_cup_time(cups_timestamps)
+    cup_times.append(sum(cup_times, timedelta()) / len(cup_times))
+    return sum(cup_times, timedelta())
+
+
 def get_week_stats(message):
     reply = '========================\nСТАТИСТИКА НЕДЕЛИ\n========================\n\n'
     data = get_data(get_user_file(message))
@@ -242,6 +260,8 @@ def get_week_stats(message):
     best_mid_speed = (0, 0)
     best_cups = (0, 0)
     hot_time = None
+    longest_day = (timedelta(seconds=0), 0)
+    shortest_day = (timedelta(hours=24), 0)
 
     for i, date in enumerate(week):
         timestamps = stats.get(date, [])
@@ -260,6 +280,11 @@ def get_week_stats(message):
                 hot_time = (max(hot_time[0], hot_period[0]), min(hot_time[1], hot_period[1]))
             else:
                 hot_time = (min(hot_time[0], hot_period[0]), max(hot_time[1], hot_period[1]))
+            work_time = get_work_time(timestamps)
+            if work_time > longest_day[0]:
+                longest_day = (work_time, i)
+            if work_time < shortest_day[0]:
+                shortest_day = (work_time, i)
         if len(timestamps) > best_cups[0]:
             best_cups = (len(timestamps), i)
 
@@ -274,6 +299,12 @@ def get_week_stats(message):
         stat_parts.append(f'Самые горячие часы за неделю: '
                           f'{hot_time[0].strftime("%H:%M")}-{hot_time[1].strftime("%H:%M")}'
                           f'\nВ этот период скорость была на высочайшем уровне!')
+    longest_day_date = datetime(day=1, month=1, year=2024) + longest_day[0]
+    shortest_day_date = datetime(day=1, month=1, year=2024) + shortest_day[0]
+    stat_parts.append(f'Дольше всего ты работал в {day_names[longest_day[1]]} '
+                      f'(~{longest_day_date.hour} часов и {longest_day_date.minute} минут)!')
+    stat_parts.append(f'А вот меньше всего ты работал в {day_names[shortest_day[1]]} '
+                      f'(~{shortest_day_date.hour} часов и {shortest_day_date.minute} минут)!')
 
     reply = reply + '\n\n'.join(stat_parts)
     return reply

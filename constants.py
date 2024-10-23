@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class Constants:
@@ -32,6 +32,7 @@ class Constants:
     DEMO_DIR = 'demo'
     INFO_KEY = 'info'
     LOG_DIR = 'logs'
+    AVERAGE_TEA_TIME = timedelta(hours=1)
 
     @staticmethod
     def get_date():
