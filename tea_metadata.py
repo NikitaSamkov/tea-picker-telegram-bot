@@ -23,7 +23,10 @@ def get_tea_meta(tea_data, with_hidden=False):
         value = tea_data.get(meta_id, None)
         meta_type = meta_info.get('type', None)
         if meta_type and meta_type in TYPE_TO_FUNC and value:
-            value = TYPE_TO_FUNC.get(meta_type)(value)
+            try:
+                value = TYPE_TO_FUNC.get(meta_type)(value)
+            except ValueError:
+                print(value)
         tea_meta.append({'id': meta_id, 'name': meta_name, 'value': value})
     return tea_meta
 

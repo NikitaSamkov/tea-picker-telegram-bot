@@ -277,7 +277,10 @@ def edit_meta_handler(call):
             value = value_idx if not values or not value_idx.isnumeric() or len(values) <= int(value_idx) \
                 else values[int(value_idx)]
             reply = edit_tea_info(user_id, value, tea_name, meta_id)
+            callback = f'edit;{user_id};{tea_name}'
+            markup = types.InlineKeyboardMarkup([[types.InlineKeyboardButton('Назад', callback_data=callback)]])
             bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply)
+            bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=message.message_id, reply_markup=markup)
             return
 
         values = metadata.get('values', None)
