@@ -6,6 +6,7 @@ from telebot import types
 from telebot.apihelper import ApiTelegramException
 from configparser import ConfigParser
 
+from admin import clear_empty_records, clear_old_records, clear_png
 from constants import Constants
 from common import get_tea_names, get_tea_list, get_data, get_file_by_id, get_user_file, update_info
 from crud import delete_tea, all_tea, random_tea, add_cup
@@ -21,6 +22,8 @@ config = ConfigParser()
 config.read(settings_path)
 
 bot = telebot.TeleBot(config.get('bot_settings', 'BOT_TOKEN'))
+
+print('[БОТ ЗАПУЩЕН]')
 
 
 def send_message(user_message, reply, markup=None):
@@ -301,6 +304,33 @@ def edit_meta_handler(call):
         SAC.prepare('edit_tea_info', user_id=user_id, extra_args={'tea_name': tea_name, 'meta_id': meta_id})
         reply = f'Напишите значение для аттрибута "{metadata.get("name")}":'
         bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=reply)
+
+
+@bot.message_handler(commands=['clear_empty'])
+def clear_empty(message):
+    user_id = message.from_user.id
+    if str(user_id) != config.get('admin', 'ADMIN_ID', fallback=-1):
+        return bot.send_message(message.chat.id, 'Вы не являетесь администратором!')
+    reply = clear_empty_records()
+    send_message(message, reply)
+
+
+@bot.message_handler(commands=['clear_old'])
+def clear_old(message):
+    user_id = message.from_user.id
+    if str(user_id) != config.get('admin', 'ADMIN_ID', fallback=-1):
+        return bot.send_message(message.chat.id, 'Вы не являетесь администратором!')
+    reply = clear_old_records()
+    send_message(message, reply)
+
+
+@bot.message_handler(commands=['clear_pics'])
+def clear_pics(message):
+    user_id = message.from_user.id
+    if str(user_id) != config.get('admin', 'ADMIN_ID', fallback=-1):
+        return bot.send_message(message.chat.id, 'Вы не являетесь администратором!')
+    reply = clear_png()
+    send_message(message, reply)
 
 
 @bot.message_handler(content_types=['text'])

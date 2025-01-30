@@ -8,3 +8,6 @@ SUBPLOT_BG=subplot-bg.png
 GRAPH_LINE_COLOR=#ffffff
 TEXT_COLOR=#ffffff
 EDGE_COLOR=#ffffff
+
+[admin]
+ADMIN_ID = 0
