@@ -49,6 +49,12 @@ def edit_tea_info(user_id, value, tea_name, meta_id):
     tea_list = get_tea_list(data)
     if tea_name not in tea_list:
         return 'О таком чае я ничего не знаю!'
+    meta_type = get_metadata().get(meta_id, {}).get('type', None)
+    if meta_type and meta_type in TYPE_TO_FUNC and value:
+        try:
+            value = TYPE_TO_FUNC.get(meta_type)(value)
+        except ValueError:
+            return 'Неверное значение для аттрибута!'
     tea_list[tea_name][meta_id] = value
     save_data(user_file, data)
     return 'Успешно обновлено!'

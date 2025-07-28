@@ -9,7 +9,10 @@ def clear_empty_records():
         path = os.path.join(Constants.USER_DIR, item)
         if item.endswith('.json') and os.path.isfile(path):
             print(f'Проверяю {item}')
-            data = get_data(path)
+            try:
+                data = get_data(path)
+            except Exception:
+                data = {}
             if Constants.INFO_KEY in data:
                 data.pop(Constants.INFO_KEY)
             if len(data) == 0:

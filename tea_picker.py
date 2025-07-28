@@ -96,7 +96,10 @@ def tea_list(message):
 
 @bot.message_handler(commands=['pick'])
 def tea_pick(message):
-    reply = random_tea(message)
+    try:
+        reply = random_tea(message)
+    except Exception:
+        print(f'Произошла ошибка для пользователя {message.from_user.id}')
     if reply is None:
         send_message(message, 'Милорд! Ваша коллекция чая пуста!')
         return
