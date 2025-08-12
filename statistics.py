@@ -308,3 +308,4 @@ def get_week_stats(message):
 
     reply = reply + '\n\n'.join(stat_parts)
     return reply
+ # type: ignore
